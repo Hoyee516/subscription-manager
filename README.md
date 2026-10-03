@@ -30,11 +30,12 @@ npm install && npx vercel link && npx vercel env pull .env.local
 
 Then create `.env` (the Prisma CLI reads `.env`, Next.js reads `.env.local`) with:
 
-- `DATABASE_URL` = the pooled URL from `.env.local` (host has `-pooler`)
-- `DIRECT_URL` = the unpooled URL from `.env.local` (`DATABASE_URL_UNPOOLED`)
+- `POSTGRES_PRISMA_URL` and `POSTGRES_URL_NON_POOLING` = copied from `.env.local`
 - `SEED_USERNAME` and `SEED_PASSWORD` = your login for this app
 
-Add `DIRECT_URL` and `AUTH_SECRET` to `.env.local` too if they aren't there.
+Copy them in the editor, not with a terminal redirect: VS Code's terminal can inject hidden characters into redirected output.
+
+Note: in Vercel → Storage → Neon, the database must be connected to the **Development** environment too, or `vercel env pull` brings no database variables.
 
 ### 4. Create tables and load your data
 

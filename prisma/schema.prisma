@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("POSTGRES_PRISMA_URL") // pooled, includes connect_timeout=15
+  directUrl = env("POSTGRES_URL_NON_POOLING") // direct, used by `prisma db push`
 }
 
 // ---------- Enums ----------
