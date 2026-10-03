@@ -1,12 +1,14 @@
 "use client";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +19,8 @@ export default function LoginPage() {
       toast.error("Wrong username or password");
       return;
     }
-    window.location.href = "/";
+    router.push("/");
+    router.refresh();
   }
 
   return (

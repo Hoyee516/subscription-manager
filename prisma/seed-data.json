@@ -22,8 +22,13 @@
       "issuer": "BOC"
     },
     {
-      "label": "DBS",
-      "type": "OTHER",
+      "label": "DBS Credit Card",
+      "type": "CARD",
+      "issuer": "DBS"
+    },
+    {
+      "label": "DBS Debit Card",
+      "type": "CARD",
       "issuer": "DBS"
     },
     {
@@ -48,10 +53,10 @@
           "endDate": "2020-01-31",
           "dueDate": null,
           "amount": 669.4,
-          "currency": "HKD",
+          "currency": "USD",
           "cycleUnit": "YEAR",
           "cycleCount": 1,
-          "notes": "158.39 + 511.01 / year; currency not stated in source",
+          "notes": "158.39 + 511.01 / year",
           "payments": [],
           "paymentMethod": null
         }
@@ -68,17 +73,16 @@
       "category": "Critical Illness",
       "type": "POLICY",
       "status": "ENDED",
-      "notes": "危疾 rider. 保額 HK$1 Mil / disease; HK$6 Mil lifelong. Status not stated in source.",
+      "notes": "危疾 rider. 保額 HK$1 Mil / disease; HK$6 Mil lifelong. Ended 31 Jul 2020.",
       "terms": [
         {
           "startDate": "2019-08-01",
-          "endDate": null,
+          "endDate": "2020-07-31",
           "dueDate": null,
           "amount": 1582,
           "currency": "HKD",
           "cycleUnit": "YEAR",
           "cycleCount": 1,
-          "notes": "Only one premium row in source; currency not stated",
           "payments": [],
           "paymentMethod": null
         }
@@ -137,11 +141,11 @@
             {
               "paidAt": "2021-07-22",
               "amountHkd": 6157,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "CARD_ONLINE"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2022-08-01",
@@ -155,11 +159,11 @@
             {
               "paidAt": "2022-07-22",
               "amountHkd": 6727.72,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "CARD_ONLINE"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2023-08-01",
@@ -173,11 +177,11 @@
             {
               "paidAt": "2023-07-23",
               "amountHkd": 7120.11,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "CARD_ONLINE"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2024-08-01",
@@ -761,11 +765,11 @@
             {
               "paidAt": "2021-08-06",
               "amountHkd": 50889.7,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "AUTOPAY"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2022-08-01",
@@ -780,11 +784,11 @@
             {
               "paidAt": "2022-08-09",
               "amountHkd": 50889.7,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "AUTOPAY"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2023-08-01",
@@ -799,11 +803,11 @@
             {
               "paidAt": "2023-08-08",
               "amountHkd": 50889.7,
-              "paymentMethod": "DBS",
+              "paymentMethod": "DBS Credit Card",
               "channel": "AUTOPAY"
             }
           ],
-          "paymentMethod": "DBS"
+          "paymentMethod": "DBS Credit Card"
         },
         {
           "startDate": "2024-08-01",
@@ -1091,7 +1095,7 @@
             },
             {
               "paidAt": "2026-08-13",
-              "amountHkd": 10000,
+              "amountHkd": 10075.75,
               "paymentMethod": "HSBC Everymile",
               "channel": "CARD_ONLINE",
               "note": "網上繳費 instalment"
@@ -1260,20 +1264,20 @@
       ],
       "terms": [
         {
-          "startDate": "2024-03-11",
+          "startDate": "2025-03-11",
           "endDate": "2026-03-10",
-          "dueDate": "2024-03-11",
+          "dueDate": "2025-03-11",
           "amount": 231.39,
           "currency": "HKD",
           "cycleUnit": "YEAR",
           "cycleCount": 1,
           "payments": [
             {
-              "paidAt": "2024-03-11",
+              "paidAt": "2025-03-11",
               "amountHkd": 231.39,
               "paymentMethod": "Aeon WAKUWAKU",
               "channel": "CARD_ONLINE",
-              "note": "Enrolled & paid. Source date reads 11/3/20205"
+              "note": "Enrolled & paid"
             }
           ],
           "paymentMethod": "Aeon WAKUWAKU"
@@ -1327,7 +1331,7 @@
           "commitmentMonths": 24,
           "notes": "$78 + $18 admin fee. 7GB + unlimited",
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "SC Simply Cash"
         },
         {
           "startDate": "2021-05-21",
@@ -1340,7 +1344,7 @@
           "commitmentMonths": 24,
           "notes": "$88 + $18 admin fee. 7GB + unlimited",
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "SC Simply Cash"
         },
         {
           "startDate": "2023-05-21",
@@ -1353,7 +1357,7 @@
           "commitmentMonths": 24,
           "notes": "$78 + $18 admin fee. 15GB + unlimited",
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "SC Simply Cash"
         },
         {
           "startDate": "2025-05-21",
@@ -1366,7 +1370,7 @@
           "commitmentMonths": 24,
           "notes": "15GB (4.5G 42Mbps) + unlimited",
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "SC Simply Cash"
         }
       ],
       "isSavings": false
@@ -1416,7 +1420,7 @@
         },
         {
           "startDate": "2023-09-09",
-          "endDate": "2026-09-08",
+          "endDate": "2026-04-16",
           "dueDate": null,
           "amount": 139,
           "currency": "HKD",
@@ -1592,7 +1596,7 @@
           "cycleUnit": "MONTH",
           "cycleCount": 1,
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "DBS Debit Card"
         }
       ],
       "isSavings": false
@@ -1621,7 +1625,7 @@
           "cycleUnit": "ONCE",
           "cycleCount": 1,
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "Aeon WAKUWAKU"
         }
       ],
       "isSavings": false,
@@ -1647,7 +1651,7 @@
           "cycleUnit": "ONCE",
           "cycleCount": 1,
           "payments": [],
-          "paymentMethod": null
+          "paymentMethod": "Aeon WAKUWAKU"
         }
       ],
       "isSavings": false,
@@ -1948,6 +1952,10 @@
           "amount": 412.0
         },
         {
+          "periodStart": "2022-11-01",
+          "amount": 0.0
+        },
+        {
           "periodStart": "2023-01-01",
           "amount": 133.0
         },
@@ -2241,21 +2249,6 @@
     }
   ],
   "reviewFlags": [
-    "醫療 (Prudential, ended 2020): currency of 158.39 + 511.01 not stated — seeded as HKD.",
-    "大病醫療 (Prudential, from Aug 2019): only one premium row and no payments — seeded as ENDED. Confirm whether it is still active and its currency.",
-    "家務助理保險: first term 11 Mar 2024 – 10 Mar 2026 spans two years at HK$231.39/yr; payment date reads '11/3/20205' — seeded as 11 Mar 2024.",
-    "年金 2025: seven HK$10k instalment dates but premium is HK$60,075.75 — last (21 Jul) seeded as HK$75.75.",
-    "年金 2026: six instalment dates = HK$60,000; HK$75.75 remainder has no recorded payment.",
-    "'DBS' payment method (Bupa 2021–23, 儲蓄 autopay 2021–23): card or bank account?",
-    "Claude Pro: source shows one month (24 Mar – 23 Apr 2026). Seeded as an active monthly subscription — confirm.",
-    "HKBN mobile, Claude Pro, SurfShark: no payment method in source.",
-    "Patreon: source says $1,632/year ($159/month) — seeded as HK$1,632 yearly.",
-    "Google One is listed under 'iCloud' in Home Summary.",
-    "Broadband: Navigator contracts overlap (old to 8 Sep 2026, new from 17 Apr 2026) — seeded as given.",
-    "Utilities: date column has mixed formats; rows without a date are assigned to the month above. Electricity Nov 2022 is '—' (skipped).",
-    "Rates & Gov Rent: Apr 2024 HK$1,875 looks low vs HK$2,875 either side; Oct 2023 HK$3,441 looks high vs HK$2,442 — typos?",
-    "Rates & Gov Rent Jul 2026, Water Aug 2026, Electricity Sep 2026: not in source (will show as 'To record').",
-    "Utility reminder lead times: not set yet (no payment history in source).",
-    "Card expiry dates: none in source — add in the app."
+    "All 16 review flags resolved on 3 Oct 2026 (see prisma/fixes/2026-10-03-corrections.ts)."
   ]
 }
