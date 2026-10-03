@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Tokens from the approved UI mockup */
+@theme {
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --color-ground: #F2F3EF;
+  --color-ink: #15202B;
+  --color-muted: #5D6670;
+  --color-line: #E1E3DD;
+  --color-brand: #0B5D52;
+  --color-brand-dark: #08443C;
+  --color-brand-soft: #D9EEE8;
+  --color-hike: #C2410C;
+  --color-hike-ink: #9A3412;
+  --color-hike-soft: #FBE3D0;
+  --color-info: #1E4E8C;
+  --color-info-soft: #DAE6F6;
+  --color-panel: #0F2A33;
+}
+
+body {
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}

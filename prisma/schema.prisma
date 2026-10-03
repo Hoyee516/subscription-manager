@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum ItemType {
+  RECURRING // charges each cycle until cancelled (Patreon, Norton)
+  CONTRACT // fixed commitment with an end date (HKBN, Navigator)
+  POLICY // insurance policy year, paid before each year starts
+  PASS // one-off period bought when needed (CapCut, Uppbeat)
+  TRIAL // free until it converts
+  PREPAID // multi-year paid up front (SurfShark)
+}
+
+enum ItemStatus {
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum CycleUnit {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+  ONCE // whole term paid once (passes, prepaid, trials)
+}
+
+enum LeadUnit {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+}
+
+enum PaymentMethodType {
+  CARD
+  BANK
+  OTHER
+}
+
+enum PayChannel {
+  CARD_ONLINE
+  IN_PERSON
+  FPS
+  AUTOPAY
+  OTHER
+}
+
+enum AlertType {
+  PRICE_HIKE
+  DUE_SOON
+  CONTRACT_ENDING
+  TRIAL_ENDING
+  PASS_ENDING
+  CARD_EXPIRING
+  BILL_TO_RECORD
+}
+
+// ---------- Models ----------
+
+model User {
+  id             String          @id @default(uuid())
+  username       String          @unique
+  passwordHash   String
+  baseCurrency   String          @default("HKD")
+  calendarId     String? // Google Calendar to sync into (Phase 3)
+  createdAt      DateTime        @default(now())
+  paymentMethods PaymentMethod[]
+  items          Item[]
+  utilities      Utility[]
+  alerts         Alert[]
+}
+
+model PaymentMethod {
+  id           String            @id @default(uuid())
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String // "HSBC Everymile"
+  type         PaymentMethodType @default(CARD)
+  issuer       String?
+  last4        String?
+  expiryMonth  Int?
+  expiryYear   Int?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  terms        Term[]
+  payments     Payment[]
+  utilityBills UtilityBill[]
+
+  @@unique([userId, label])
+}
+
+// One thing you pay for: a subscription, contract, policy, pass or trial.
+model Item {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  vendor        String
+  categoryGroup String // "Insurance", "Telecom", "Software", "Creator Tools", "Memberships"
+  category      String // "Medical", "Broadband", "AI Tools", ...
+  type          ItemType
+  status        ItemStatus @default(ACTIVE)
+  isSavings     Boolean    @default(false) // 儲蓄 / 年金: shown apart from spending MRC
+  autoRenew     Boolean    @default(false)
+  parentId      String? // riders and add-ons sit under their main item
+  parent        Item?      @relation("ItemRiders", fields: [parentId], references: [id], onDelete: Cascade)
+  riders        Item[]     @relation("ItemRiders")
+  cancelUrl     String?
+  notes         String?
+  calEventId    String? // Google Calendar event (Phase 3)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  terms         Term[]
+  reminders     Reminder[]
+  alerts        Alert[]
+
+  @@index([userId, status])
+}
+
+// A priced period of an Item: policy year, contract period, pass, or current
+// subscription price. Consecutive terms are the price history.
+model Term {
+  id               String         @id @default(uuid())
+  itemId           String
+  item             Item           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  startDate        DateTime       @db.Date
+  endDate          DateTime?      @db.Date // null = open-ended (recurring until cancelled)
+  dueDate          DateTime?      @db.Date // when payment is due, if different from startDate
+  amount           Decimal        @db.Decimal(12, 2) // in `currency`, per cycle
+  currency         String         @default("HKD")
+  amountHkd        Decimal?       @db.Decimal(12, 2) // HKD equivalent quoted by the vendor, if any
+  cycleUnit        CycleUnit
+  cycleCount       Int            @default(1)
+  commitmentMonths Int?
+  paymentMethodId  String?
+  paymentMethod    PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  notes            String?
+  payments         Payment[]
+
+  @@index([itemId, startDate])
+}
+
+// Money actually paid against a term. Several per term = instalments.
+model Payment {
+  id              String         @id @default(uuid())
+  termId          String
+  term            Term           @relation(fields: [termId], references: [id], onDelete: Cascade)
+  paidAt          DateTime       @db.Date
+  amountHkd       Decimal        @db.Decimal(12, 2)
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  channel         PayChannel?
+  batchRef        String? // one bill covering several policies
+  note            String?
+  createdAt       DateTime       @default(now())
+}
+
+model Utility {
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String // "Electricity", "Water", "Rates & Gov Rent"
+  provider    String?
+  cycleMonths Int // 2 = bimonthly, 3 = quarterly, 4 = every 4 months
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  bills       UtilityBill[]
+  reminders   Reminder[]
+  alerts      Alert[]
+
+  @@unique([userId, name])
+}
+
+model UtilityBill {
+  id              String         @id @default(uuid())
+  utilityId       String
+  utility         Utility        @relation(fields: [utilityId], references: [id], onDelete: Cascade)
+  periodStart     DateTime       @db.Date // bill month (1st of month)
+  periodEnd       DateTime?      @db.Date
+  amount          Decimal        @db.Decimal(12, 2) // amount due
+  credit          Decimal?       @db.Decimal(12, 2) // subsidy / credit, negative
+  dueDate         DateTime?      @db.Date
+  paidAt          DateTime?      @db.Date
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  note            String?
+  createdAt       DateTime       @default(now())
+
+  @@unique([utilityId, periodStart])
+}
+
+// "N units before due" — configurable per item or utility.
+model Reminder {
+  id        String   @id @default(uuid())
+  itemId    String?
+  item      Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  utilityId String?
+  utility   Utility? @relation(fields: [utilityId], references: [id], onDelete: Cascade)
+  offset    Int
+  unit      LeadUnit
+  createdAt DateTime @default(now())
+}
+
+model Alert {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        AlertType
+  itemId      String?
+  item        Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  utilityId   String?
+  utility     Utility?  @relation(fields: [utilityId], references: [id], onDelete: Cascade)
+  message     String
+  dueAt       DateTime
+  dedupeKey   String    @unique // e.g. "DUE_SOON:<itemId>:2027-08-01" — the daily job can re-run safely
+  readAt      DateTime?
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, dismissedAt])
+}
+
+model FxRate {
+  date  DateTime @db.Date
+  base  String
+  quote String
+  rate  Decimal  @db.Decimal(18, 8)
+
+  @@id([date, base, quote])
+}

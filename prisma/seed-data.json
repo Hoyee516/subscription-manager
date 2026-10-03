@@ -1,0 +1,2261 @@
+{
+  "_readme": "Seed data for Subscription Manager. Review before seeding. Amounts in the term's currency; amountHkd = HKD equivalent where the source gave one.",
+  "paymentMethods": [
+    {
+      "label": "HSBC Everymile",
+      "type": "CARD",
+      "issuer": "HSBC"
+    },
+    {
+      "label": "SC Simply Cash",
+      "type": "CARD",
+      "issuer": "Standard Chartered"
+    },
+    {
+      "label": "Aeon WAKUWAKU",
+      "type": "CARD",
+      "issuer": "Aeon"
+    },
+    {
+      "label": "BOC Chill",
+      "type": "CARD",
+      "issuer": "BOC"
+    },
+    {
+      "label": "DBS",
+      "type": "OTHER",
+      "issuer": "DBS"
+    },
+    {
+      "label": "FPS",
+      "type": "BANK",
+      "issuer": null
+    }
+  ],
+  "items": [
+    {
+      "key": "pru-medical",
+      "name": "醫療",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Medical",
+      "type": "POLICY",
+      "status": "ENDED",
+      "notes": "Discontinued 31 Jan 2020. Premium listed as 158.39 + 511.01 per year.",
+      "terms": [
+        {
+          "startDate": "2015-04-01",
+          "endDate": "2020-01-31",
+          "dueDate": null,
+          "amount": 669.4,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "notes": "158.39 + 511.01 / year; currency not stated in source",
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "reminders": [],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-major-medical",
+      "name": "大病醫療",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Critical Illness",
+      "type": "POLICY",
+      "status": "ENDED",
+      "notes": "危疾 rider. 保額 HK$1 Mil / disease; HK$6 Mil lifelong. Status not stated in source.",
+      "terms": [
+        {
+          "startDate": "2019-08-01",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 1582,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "notes": "Only one premium row in source; currency not stated",
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "reminders": [],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "bupa",
+      "name": "公務員醫療",
+      "vendor": "Bupa",
+      "categoryGroup": "Insurance",
+      "category": "Medical",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "A) Hospital & Surgical Benefit, Plan 2 – Option 1 (100%). B) Supp Major Medical Benefit, Plan 2 – Option 1.",
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-08-01",
+          "endDate": "2020-07-31",
+          "dueDate": "2019-08-01",
+          "amount": 4913,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-08-01",
+          "endDate": "2021-07-31",
+          "dueDate": "2020-08-01",
+          "amount": 5991,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-08-01",
+          "endDate": "2022-07-31",
+          "dueDate": "2021-08-01",
+          "amount": 6157,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2021-07-22",
+              "amountHkd": 6157,
+              "paymentMethod": "DBS",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2022-08-01",
+          "endDate": "2023-07-31",
+          "dueDate": "2022-08-01",
+          "amount": 6727.72,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2022-07-22",
+              "amountHkd": 6727.72,
+              "paymentMethod": "DBS",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2023-08-01",
+          "endDate": "2024-07-31",
+          "dueDate": "2023-08-01",
+          "amount": 7120.11,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2023-07-23",
+              "amountHkd": 7120.11,
+              "paymentMethod": "DBS",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2024-08-01",
+          "endDate": "2025-07-31",
+          "dueDate": "2024-08-01",
+          "amount": 7578.57,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2024-07-23",
+              "amountHkd": 7578.57,
+              "paymentMethod": "SC Simply Cash",
+              "channel": "CARD_ONLINE",
+              "note": "Changed credit card on 9/7/2024"
+            }
+          ],
+          "paymentMethod": "SC Simply Cash"
+        },
+        {
+          "startDate": "2025-08-01",
+          "endDate": "2026-07-31",
+          "dueDate": "2025-08-01",
+          "amount": 9520.51,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2025-07-23",
+              "amountHkd": 9520.51,
+              "paymentMethod": "SC Simply Cash",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "SC Simply Cash"
+        },
+        {
+          "startDate": "2026-08-01",
+          "endDate": "2027-07-31",
+          "dueDate": "2026-08-01",
+          "amount": 10181.17,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2026-07-23",
+              "amountHkd": 10181.17,
+              "paymentMethod": "SC Simply Cash",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "SC Simply Cash"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-ci-sup",
+      "name": "危疾(供)",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Critical Illness",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "Policy start 16 Mar 2015. 保額 US$57,600. 送10年危疾 US$16,800 (保障期至 1/4/2025). Paid together with 危疾(租) in one Prudential bill.",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "WEEK"
+        },
+        {
+          "offset": 1,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-04-01",
+          "endDate": "2020-03-31",
+          "dueDate": "2019-04-01",
+          "amount": 1262.65,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 9848.67,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-04-01",
+          "endDate": "2021-03-31",
+          "dueDate": "2020-04-01",
+          "amount": 1329.01,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 10366.28,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-04-01",
+          "endDate": "2022-03-31",
+          "dueDate": "2021-04-01",
+          "amount": 1399.67,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 10917.43,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2022-04-01",
+          "endDate": "2023-03-31",
+          "dueDate": "2022-04-01",
+          "amount": 1475.17,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 11506.33,
+          "payments": [
+            {
+              "paidAt": "2022-03-10",
+              "amountHkd": 11506.33,
+              "paymentMethod": "FPS",
+              "channel": "FPS"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2023-04-01",
+          "endDate": "2024-03-31",
+          "dueDate": "2023-04-01",
+          "amount": 1556.1,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 12137.58,
+          "payments": [
+            {
+              "paidAt": "2023-03-30",
+              "amountHkd": 12137.58,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "batchRef": "Prudential Apr 2023 bill, total HK$17,804.12"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2024-04-01",
+          "endDate": "2025-03-31",
+          "dueDate": "2024-04-01",
+          "amount": 1643.17,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 12816.73,
+          "payments": [
+            {
+              "paidAt": "2024-03-26",
+              "amountHkd": 12816.73,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2024 bill, total HK$18,724.37"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-04-01",
+          "endDate": "2026-03-31",
+          "dueDate": "2025-04-01",
+          "amount": 1697.37,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 13239.49,
+          "payments": [
+            {
+              "paidAt": "2025-03-20",
+              "amountHkd": 13239.49,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2025 bill, total HK$18,232.11"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2026-04-01",
+          "endDate": "2027-03-31",
+          "dueDate": "2026-04-01",
+          "amount": 1841.33,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 14436.03,
+          "payments": [
+            {
+              "paidAt": "2026-03-31",
+              "amountHkd": 14436.03,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2026 bill, total HK$19,745.03"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-ci-rent",
+      "name": "危疾(租)",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Critical Illness",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "Policy start 1 Apr 2015. 保額 US$130,000 (保障期至 1/4/2060), premium steps up every 5 years. Free 10-year CI cover to 1/4/2025.",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "WEEK"
+        },
+        {
+          "offset": 1,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-04-01",
+          "endDate": "2020-03-31",
+          "dueDate": "2019-04-01",
+          "amount": 349.7,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2727.66,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-04-01",
+          "endDate": "2021-03-31",
+          "dueDate": "2020-04-01",
+          "amount": 432.9,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 3376.62,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-04-01",
+          "endDate": "2022-03-31",
+          "dueDate": "2021-04-01",
+          "amount": 432.9,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 3376.62,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2022-04-01",
+          "endDate": "2023-03-31",
+          "dueDate": "2022-04-01",
+          "amount": 432.9,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 3376.62,
+          "payments": [
+            {
+              "paidAt": "2022-03-10",
+              "amountHkd": 3376.62,
+              "paymentMethod": "FPS",
+              "channel": "FPS"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2023-04-01",
+          "endDate": "2024-03-31",
+          "dueDate": "2023-04-01",
+          "amount": 432.9,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 3376.62,
+          "payments": [
+            {
+              "paidAt": "2023-03-30",
+              "amountHkd": 3376.62,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "batchRef": "Prudential Apr 2023 bill, total HK$17,804.12"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2024-04-01",
+          "endDate": "2025-03-31",
+          "dueDate": "2024-04-01",
+          "amount": 432.9,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 3376.62,
+          "payments": [
+            {
+              "paidAt": "2024-03-26",
+              "amountHkd": 3376.62,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2024 bill, total HK$18,724.37"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-04-01",
+          "endDate": "2026-03-31",
+          "dueDate": "2025-04-01",
+          "amount": 297.05,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2316.99,
+          "payments": [
+            {
+              "paidAt": "2025-03-20",
+              "amountHkd": 2316.99,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2025 bill, total HK$18,232.11"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2026-04-01",
+          "endDate": "2027-03-31",
+          "dueDate": "2026-04-01",
+          "amount": 297.05,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2328.87,
+          "payments": [
+            {
+              "paidAt": "2026-03-31",
+              "amountHkd": 2328.87,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2026 bill, total HK$19,745.03"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-ci-rent-rider",
+      "parentKey": "pru-ci-rent",
+      "name": "治療保 (rider)",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Critical Illness",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "Rider on 危疾(租).",
+      "reminders": [],
+      "terms": [
+        {
+          "startDate": "2019-04-01",
+          "endDate": "2020-03-31",
+          "dueDate": "2019-04-01",
+          "amount": 197.7,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 1542.06,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-04-01",
+          "endDate": "2021-03-31",
+          "dueDate": "2020-04-01",
+          "amount": 197.7,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 1542.06,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-04-01",
+          "endDate": "2022-03-31",
+          "dueDate": "2021-04-01",
+          "amount": 237.6,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 1853.28,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2022-04-01",
+          "endDate": "2023-03-31",
+          "dueDate": "2022-04-01",
+          "amount": 256.0,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 1996.8,
+          "payments": [
+            {
+              "paidAt": "2022-03-10",
+              "amountHkd": 1996.8,
+              "paymentMethod": "FPS",
+              "channel": "FPS"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2023-04-01",
+          "endDate": "2024-03-31",
+          "dueDate": "2023-04-01",
+          "amount": 291.3,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2272.14,
+          "payments": [
+            {
+              "paidAt": "2023-03-30",
+              "amountHkd": 2272.14,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "batchRef": "Prudential Apr 2023 bill, total HK$17,804.12"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2024-04-01",
+          "endDate": "2025-03-31",
+          "dueDate": "2024-04-01",
+          "amount": 322.1,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2512.38,
+          "payments": [
+            {
+              "paidAt": "2024-03-26",
+              "amountHkd": 2512.38,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2024 bill, total HK$18,724.37"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-04-01",
+          "endDate": "2026-03-31",
+          "dueDate": "2025-04-01",
+          "amount": 355.1,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2769.78,
+          "payments": [
+            {
+              "paidAt": "2025-03-20",
+              "amountHkd": 2769.78,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2025 bill, total HK$18,232.11"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2026-04-01",
+          "endDate": "2027-03-31",
+          "dueDate": "2026-04-01",
+          "amount": 380.0,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 2979.2,
+          "payments": [
+            {
+              "paidAt": "2026-03-31",
+              "amountHkd": 2979.2,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON",
+              "batchRef": "Prudential Apr 2026 bill, total HK$19,745.03"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-savings",
+      "name": "儲蓄",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Savings",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "isSavings": true,
+      "notes": "Policy start 17 Jul 2019. Paid in person at Prudential, 8/F Prudential Tower, Harbour City, 21 Canton Road, TST (Mon–Fri 9:00–17:30).",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-08-01",
+          "endDate": "2020-07-31",
+          "dueDate": "2019-08-01",
+          "amount": 6523.34,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50882.05,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-08-01",
+          "endDate": "2021-07-31",
+          "dueDate": "2020-08-01",
+          "amount": 6523.34,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50882.05,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-08-01",
+          "endDate": "2022-07-31",
+          "dueDate": "2021-08-01",
+          "amount": 6524.32,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50889.7,
+          "payments": [
+            {
+              "paidAt": "2021-08-06",
+              "amountHkd": 50889.7,
+              "paymentMethod": "DBS",
+              "channel": "AUTOPAY"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2022-08-01",
+          "endDate": "2023-07-31",
+          "dueDate": "2022-08-01",
+          "amount": 6524.32,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50889.7,
+          "payments": [
+            {
+              "paidAt": "2022-08-09",
+              "amountHkd": 50889.7,
+              "paymentMethod": "DBS",
+              "channel": "AUTOPAY"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2023-08-01",
+          "endDate": "2024-07-31",
+          "dueDate": "2023-08-01",
+          "amount": 6524.32,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50889.7,
+          "payments": [
+            {
+              "paidAt": "2023-08-08",
+              "amountHkd": 50889.7,
+              "paymentMethod": "DBS",
+              "channel": "AUTOPAY"
+            }
+          ],
+          "paymentMethod": "DBS"
+        },
+        {
+          "startDate": "2024-08-01",
+          "endDate": "2025-07-31",
+          "dueDate": "2024-08-01",
+          "amount": 6524.32,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 50889.7,
+          "payments": [
+            {
+              "paidAt": "2024-07-15",
+              "amountHkd": 50889.7,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-08-01",
+          "endDate": "2026-07-31",
+          "dueDate": "2025-08-01",
+          "amount": 6524.32,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 51267.45,
+          "payments": [
+            {
+              "paidAt": "2025-07-30",
+              "amountHkd": 51267.45,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2026-08-01",
+          "endDate": "2027-07-31",
+          "dueDate": "2026-08-01",
+          "amount": 6523.91,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 51214.61,
+          "payments": [
+            {
+              "paidAt": "2026-07-28",
+              "amountHkd": 51214.61,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "IN_PERSON"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "autoRenew": false
+    },
+    {
+      "key": "boc-annuity",
+      "name": "年金",
+      "vendor": "BOC",
+      "categoryGroup": "Insurance",
+      "category": "Annuity",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "isSavings": true,
+      "notes": "Premium payment term 10 years (from 2019). Recently paid in HK$10,000 instalments by HSBC Everymile 網上繳費 from Feb/Mar.",
+      "reminders": [
+        {
+          "offset": 5,
+          "unit": "MONTH"
+        },
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-09-09",
+          "endDate": "2020-08-05",
+          "dueDate": "2019-09-09",
+          "amount": 45047.8,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2020-08-06",
+          "endDate": "2021-08-03",
+          "dueDate": "2020-08-06",
+          "amount": 60066.74,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-08-04",
+          "endDate": "2022-08-13",
+          "dueDate": "2021-08-04",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2021-08-04",
+              "amountHkd": 60075.75,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "note": "FPS via SC"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2022-08-14",
+          "endDate": "2023-08-13",
+          "dueDate": "2022-08-14",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2022-08-09",
+              "amountHkd": 60075.75,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "note": "FPS via SC"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2023-08-14",
+          "endDate": "2024-08-13",
+          "dueDate": "2023-08-14",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2023-08-11",
+              "amountHkd": 60075.75,
+              "paymentMethod": "FPS",
+              "channel": "FPS",
+              "note": "FPS via SC"
+            }
+          ],
+          "paymentMethod": "FPS"
+        },
+        {
+          "startDate": "2024-08-14",
+          "endDate": "2025-08-13",
+          "dueDate": "2024-08-14",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2024-07-30",
+              "amountHkd": 60075.75,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-08-14",
+          "endDate": "2026-08-13",
+          "dueDate": "2025-08-14",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2025-02-12",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-03-04",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-04-01",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-05-02",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-06-14",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-07-09",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2025-07-21",
+              "amountHkd": 75.75,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2026-08-14",
+          "endDate": "2027-08-13",
+          "dueDate": "2026-08-14",
+          "amount": 60075.75,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2026-03-16",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2026-04-13",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2026-05-17",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2026-06-13",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2026-07-14",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            },
+            {
+              "paidAt": "2026-08-13",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費 instalment"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "autoRenew": false
+    },
+    {
+      "key": "msig-home",
+      "name": "家居保險",
+      "vendor": "MSIG (三井住友)",
+      "categoryGroup": "Insurance",
+      "category": "Home",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "Home Insurance Plan A, Policy No. 75608039. 家居財物保障 HK$1,000,000. 個人法律責任保障: 任何一宗意外內 HK$8,000,000; 任何一保險期內 unlimited.",
+      "reminders": [
+        {
+          "offset": 4,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2024-05-29",
+          "endDate": "2025-05-28",
+          "dueDate": "2024-05-29",
+          "amount": 737.74,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2024-05-29",
+              "amountHkd": 737.74,
+              "paymentMethod": "Aeon WAKUWAKU",
+              "channel": "CARD_ONLINE",
+              "note": "Enrolled & paid"
+            }
+          ],
+          "paymentMethod": "Aeon WAKUWAKU"
+        },
+        {
+          "startDate": "2025-05-29",
+          "endDate": "2026-05-28",
+          "dueDate": "2025-05-29",
+          "amount": 737.74,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2025-05-12",
+              "amountHkd": 737.74,
+              "paymentMethod": "Aeon WAKUWAKU",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "Aeon WAKUWAKU"
+        },
+        {
+          "startDate": "2026-05-29",
+          "endDate": "2027-05-28",
+          "dueDate": "2026-05-29",
+          "amount": 737.74,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2026-05-08",
+              "amountHkd": 737.74,
+              "paymentMethod": "Aeon WAKUWAKU",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "Aeon WAKUWAKU"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "pru-ci-upgraded",
+      "name": "危疾(租) (upgraded)",
+      "vendor": "Prudential",
+      "categoryGroup": "Insurance",
+      "category": "Critical Illness",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "保額 $65,000 終身; $32,500 保障期滿日 1 Jan 2035. 保費期滿日 1 Jan 2045.",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2024-12-18",
+          "endDate": "2025-12-18",
+          "dueDate": "2024-12-18",
+          "amount": 1890.85,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 14763.37,
+          "payments": [
+            {
+              "paidAt": "2024-12-18",
+              "amountHkd": 14763.37,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        },
+        {
+          "startDate": "2025-12-19",
+          "endDate": "2026-12-18",
+          "dueDate": "2025-12-19",
+          "amount": 1892.74,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 14872.96,
+          "payments": [
+            {
+              "paidAt": "2025-12-03",
+              "amountHkd": 10000,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費"
+            },
+            {
+              "paidAt": "2025-12-15",
+              "amountHkd": 4872.96,
+              "paymentMethod": "HSBC Everymile",
+              "channel": "CARD_ONLINE",
+              "note": "網上繳費"
+            }
+          ],
+          "paymentMethod": "HSBC Everymile"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "boc-helper",
+      "name": "家務助理保險",
+      "vendor": "中銀",
+      "categoryGroup": "Insurance",
+      "category": "Domestic Helper",
+      "type": "POLICY",
+      "status": "ACTIVE",
+      "notes": "智幫手家傭保障計劃. 家傭個人責任保障 $50,000/每段保險期; 僱主責任保障 $100,000,000/每宗事故.",
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2024-03-11",
+          "endDate": "2026-03-10",
+          "dueDate": "2024-03-11",
+          "amount": 231.39,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2024-03-11",
+              "amountHkd": 231.39,
+              "paymentMethod": "Aeon WAKUWAKU",
+              "channel": "CARD_ONLINE",
+              "note": "Enrolled & paid. Source date reads 11/3/20205"
+            }
+          ],
+          "paymentMethod": "Aeon WAKUWAKU"
+        },
+        {
+          "startDate": "2026-03-11",
+          "endDate": "2027-03-10",
+          "dueDate": "2026-03-11",
+          "amount": 259.4,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "payments": [
+            {
+              "paidAt": "2026-03-11",
+              "amountHkd": 259.4,
+              "paymentMethod": "Aeon WAKUWAKU",
+              "channel": "CARD_ONLINE"
+            }
+          ],
+          "paymentMethod": "Aeon WAKUWAKU"
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "hkbn-mobile",
+      "name": "Mobile",
+      "vendor": "HKBN",
+      "categoryGroup": "Telecom",
+      "category": "Mobile",
+      "type": "CONTRACT",
+      "status": "ACTIVE",
+      "autoRenew": false,
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "MONTH"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-05-22",
+          "endDate": "2021-05-20",
+          "dueDate": null,
+          "amount": 96,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 24,
+          "notes": "$78 + $18 admin fee. 7GB + unlimited",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-05-21",
+          "endDate": "2023-05-20",
+          "dueDate": null,
+          "amount": 106,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 24,
+          "notes": "$88 + $18 admin fee. 7GB + unlimited",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2023-05-21",
+          "endDate": "2025-05-20",
+          "dueDate": null,
+          "amount": 96,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 24,
+          "notes": "$78 + $18 admin fee. 15GB + unlimited",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2025-05-21",
+          "endDate": "2027-05-20",
+          "dueDate": null,
+          "amount": 75,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 24,
+          "notes": "15GB (4.5G 42Mbps) + unlimited",
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "broadband",
+      "name": "Home broadband",
+      "vendor": "Navigator",
+      "categoryGroup": "Telecom",
+      "category": "Broadband",
+      "type": "CONTRACT",
+      "status": "ACTIVE",
+      "autoRenew": false,
+      "notes": "Provider was Cable until Sep 2023.",
+      "reminders": [
+        {
+          "offset": 5,
+          "unit": "MONTH"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2018-09-10",
+          "endDate": "2021-09-09",
+          "dueDate": null,
+          "amount": 158,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 36,
+          "notes": "Cable: 1000M寬頻 + FOX組合",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2021-09-10",
+          "endDate": "2023-09-09",
+          "dueDate": null,
+          "amount": 153,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 24,
+          "notes": "Cable: 1000M寬頻 + 家居電話 + 有線電視基本. $600 rebate (3rd–15th month)",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2023-09-09",
+          "endDate": "2026-09-08",
+          "dueDate": null,
+          "amount": 139,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 36,
+          "paymentMethod": "SC Simply Cash",
+          "notes": "Navigator 1000M寬頻",
+          "payments": []
+        },
+        {
+          "startDate": "2026-04-17",
+          "endDate": "2029-04-16",
+          "dueDate": null,
+          "amount": 128,
+          "currency": "HKD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "commitmentMonths": 36,
+          "paymentMethod": "SC Simply Cash",
+          "notes": "Navigator 1000M寬頻. Recontracted early; $680 relocation fee waived once",
+          "payments": []
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "norton",
+      "name": "Norton Antivirus",
+      "vendor": "Norton",
+      "categoryGroup": "Software",
+      "category": "Antivirus",
+      "type": "RECURRING",
+      "status": "ACTIVE",
+      "autoRenew": true,
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2022-03-08",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 524.19,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "paymentMethod": "SC Simply Cash",
+          "notes": "$519/year, $524.19 with tax",
+          "payments": []
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "google-one",
+      "name": "Google One 100GB",
+      "vendor": "Google",
+      "categoryGroup": "Software",
+      "category": "Cloud Storage",
+      "type": "RECURRING",
+      "status": "ACTIVE",
+      "autoRenew": true,
+      "notes": "Listed under 'iCloud' in Home Summary.",
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2019-07-07",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 150,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "paymentMethod": "SC Simply Cash",
+          "payments": []
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "patreon",
+      "name": "Patreon · Ahju",
+      "vendor": "Patreon",
+      "categoryGroup": "Memberships",
+      "category": "Creator Membership",
+      "type": "RECURRING",
+      "status": "ACTIVE",
+      "autoRenew": true,
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2022-02-07",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 1632,
+          "currency": "HKD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "paymentMethod": "SC Simply Cash",
+          "notes": "Source: $1,632/year ($159/month)",
+          "payments": []
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "substack",
+      "name": "Substack · Unclestock",
+      "vendor": "Substack",
+      "categoryGroup": "Memberships",
+      "category": "Newsletter",
+      "type": "RECURRING",
+      "status": "ACTIVE",
+      "autoRenew": true,
+      "reminders": [
+        {
+          "offset": 2,
+          "unit": "WEEK"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2026-01-13",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 40,
+          "currency": "USD",
+          "cycleUnit": "YEAR",
+          "cycleCount": 1,
+          "amountHkd": 318,
+          "paymentMethod": "Aeon WAKUWAKU",
+          "payments": []
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "claude-pro",
+      "name": "Claude Pro",
+      "vendor": "Anthropic",
+      "categoryGroup": "Software",
+      "category": "AI Tools",
+      "type": "RECURRING",
+      "status": "ACTIVE",
+      "autoRenew": true,
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "DAY"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2026-03-24",
+          "endDate": null,
+          "dueDate": null,
+          "amount": 25,
+          "currency": "USD",
+          "cycleUnit": "MONTH",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false
+    },
+    {
+      "key": "surfshark",
+      "name": "SurfShark VPN",
+      "vendor": "SurfShark",
+      "categoryGroup": "Software",
+      "category": "VPN",
+      "type": "PREPAID",
+      "status": "ACTIVE",
+      "reminders": [
+        {
+          "offset": 1,
+          "unit": "MONTH"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2026-04-18",
+          "endDate": "2028-07-17",
+          "dueDate": null,
+          "amount": 439.56,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "surfshark-ip",
+      "parentKey": "surfshark",
+      "name": "Dedicated IP",
+      "vendor": "SurfShark",
+      "categoryGroup": "Software",
+      "category": "VPN",
+      "type": "PREPAID",
+      "status": "ACTIVE",
+      "reminders": [],
+      "terms": [
+        {
+          "startDate": "2026-04-18",
+          "endDate": "2028-07-17",
+          "dueDate": null,
+          "amount": 792.45,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "perplexity",
+      "name": "Perplexity Pro",
+      "vendor": "Perplexity",
+      "categoryGroup": "Software",
+      "category": "AI Tools",
+      "type": "TRIAL",
+      "status": "ENDED",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "DAY"
+        },
+        {
+          "offset": 1,
+          "unit": "DAY"
+        },
+        {
+          "offset": 2,
+          "unit": "HOUR"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2025-07-25",
+          "endDate": "2026-06-21",
+          "dueDate": null,
+          "amount": 0,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "notes": "Trial",
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "capcut",
+      "name": "CapCut",
+      "vendor": "CapCut",
+      "categoryGroup": "Creator Tools",
+      "category": "Video Editing",
+      "type": "PASS",
+      "status": "ACTIVE",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "DAY"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2025-06-21",
+          "endDate": "2025-07-20",
+          "dueDate": null,
+          "amount": 119.18,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "paymentMethod": "Aeon WAKUWAKU",
+          "payments": []
+        },
+        {
+          "startDate": "2026-01-14",
+          "endDate": "2026-02-13",
+          "dueDate": null,
+          "amount": 119.18,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "paymentMethod": "Aeon WAKUWAKU",
+          "notes": "(be)",
+          "payments": []
+        },
+        {
+          "startDate": "2026-03-20",
+          "endDate": "2026-04-19",
+          "dueDate": null,
+          "amount": 119.18,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "paymentMethod": "Aeon WAKUWAKU",
+          "payments": []
+        },
+        {
+          "startDate": "2026-07-05",
+          "endDate": "2026-08-04",
+          "dueDate": null,
+          "amount": 119.18,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "paymentMethod": "BOC Chill",
+          "payments": []
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "canva",
+      "name": "Canva",
+      "vendor": "Canva",
+      "categoryGroup": "Creator Tools",
+      "category": "Photo Editing",
+      "type": "TRIAL",
+      "status": "ENDED",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "DAY"
+        },
+        {
+          "offset": 1,
+          "unit": "DAY"
+        },
+        {
+          "offset": 2,
+          "unit": "HOUR"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2026-02-18",
+          "endDate": "2026-03-19",
+          "dueDate": null,
+          "amount": 0,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "notes": "Trial",
+          "payments": [],
+          "paymentMethod": null
+        },
+        {
+          "startDate": "2026-07-20",
+          "endDate": "2026-08-19",
+          "dueDate": null,
+          "amount": 0,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "notes": "Trial",
+          "payments": [],
+          "paymentMethod": null
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    },
+    {
+      "key": "uppbeat",
+      "name": "Uppbeat",
+      "vendor": "Uppbeat",
+      "categoryGroup": "Creator Tools",
+      "category": "Music Library",
+      "type": "PASS",
+      "status": "ACTIVE",
+      "notes": "Video upload after the pass ends won't be protected from copyright claims.",
+      "reminders": [
+        {
+          "offset": 3,
+          "unit": "DAY"
+        }
+      ],
+      "terms": [
+        {
+          "startDate": "2026-08-03",
+          "endDate": "2026-09-02",
+          "dueDate": null,
+          "amount": 72,
+          "currency": "HKD",
+          "cycleUnit": "ONCE",
+          "cycleCount": 1,
+          "paymentMethod": "BOC Chill",
+          "payments": []
+        }
+      ],
+      "isSavings": false,
+      "autoRenew": false
+    }
+  ],
+  "utilities": [
+    {
+      "name": "Electricity",
+      "cycleMonths": 2,
+      "reminders": [],
+      "bills": [
+        {
+          "periodStart": "2018-06-01",
+          "amount": 276.7
+        },
+        {
+          "periodStart": "2018-07-01",
+          "amount": 621.0
+        },
+        {
+          "periodStart": "2018-09-01",
+          "amount": 303.0
+        },
+        {
+          "periodStart": "2018-11-01",
+          "amount": 125.0
+        },
+        {
+          "periodStart": "2019-01-01",
+          "amount": 55.0
+        },
+        {
+          "periodStart": "2019-03-01",
+          "amount": 163.0
+        },
+        {
+          "periodStart": "2019-05-01",
+          "amount": 472.0
+        },
+        {
+          "periodStart": "2019-07-01",
+          "amount": 657.0
+        },
+        {
+          "periodStart": "2019-09-01",
+          "amount": 370.0
+        },
+        {
+          "periodStart": "2019-11-01",
+          "amount": 0.0,
+          "credit": -256.31
+        },
+        {
+          "periodStart": "2020-01-01",
+          "amount": 51.0,
+          "credit": -466.73
+        },
+        {
+          "periodStart": "2020-07-01",
+          "amount": 571.44
+        },
+        {
+          "periodStart": "2020-09-01",
+          "amount": 0.0
+        },
+        {
+          "periodStart": "2020-11-01",
+          "amount": 0.0
+        },
+        {
+          "periodStart": "2021-01-01",
+          "amount": 112.0
+        },
+        {
+          "periodStart": "2021-03-01",
+          "amount": 259.0
+        },
+        {
+          "periodStart": "2021-05-01",
+          "amount": 551.0
+        },
+        {
+          "periodStart": "2021-07-01",
+          "amount": 570.0
+        },
+        {
+          "periodStart": "2021-09-01",
+          "amount": 478.0
+        },
+        {
+          "periodStart": "2021-11-01",
+          "amount": 31.0
+        },
+        {
+          "periodStart": "2022-01-01",
+          "amount": 457.0
+        },
+        {
+          "periodStart": "2022-03-01",
+          "amount": 62.0
+        },
+        {
+          "periodStart": "2022-05-01",
+          "amount": 656.0
+        },
+        {
+          "periodStart": "2022-07-01",
+          "amount": 1090.0
+        },
+        {
+          "periodStart": "2022-09-01",
+          "amount": 412.0
+        },
+        {
+          "periodStart": "2023-01-01",
+          "amount": 133.0
+        },
+        {
+          "periodStart": "2023-03-01",
+          "amount": 148.0
+        },
+        {
+          "periodStart": "2023-05-01",
+          "amount": 909.0
+        },
+        {
+          "periodStart": "2023-07-01",
+          "amount": 925.0
+        },
+        {
+          "periodStart": "2023-09-01",
+          "amount": 431.0
+        },
+        {
+          "periodStart": "2023-11-01",
+          "amount": 59.0
+        },
+        {
+          "periodStart": "2024-01-01",
+          "amount": 468.0
+        },
+        {
+          "periodStart": "2024-03-01",
+          "amount": 311.0
+        },
+        {
+          "periodStart": "2024-05-01",
+          "amount": 990.0
+        },
+        {
+          "periodStart": "2024-07-01",
+          "amount": 1095.0
+        },
+        {
+          "periodStart": "2024-09-01",
+          "amount": 550.0
+        },
+        {
+          "periodStart": "2025-01-01",
+          "amount": 748.0
+        },
+        {
+          "periodStart": "2025-03-01",
+          "amount": 854.0
+        },
+        {
+          "periodStart": "2025-05-01",
+          "amount": 730.0
+        },
+        {
+          "periodStart": "2025-07-01",
+          "amount": 987.0
+        },
+        {
+          "periodStart": "2025-09-01",
+          "amount": 670.0
+        },
+        {
+          "periodStart": "2025-11-01",
+          "amount": 693.0
+        },
+        {
+          "periodStart": "2026-01-01",
+          "amount": 776.0
+        },
+        {
+          "periodStart": "2026-03-01",
+          "amount": 741.0
+        },
+        {
+          "periodStart": "2026-05-01",
+          "amount": 865.0
+        },
+        {
+          "periodStart": "2026-07-01",
+          "amount": 1126.0
+        }
+      ]
+    },
+    {
+      "name": "Water",
+      "cycleMonths": 4,
+      "reminders": [],
+      "bills": [
+        {
+          "periodStart": "2018-08-01",
+          "amount": 98.1
+        },
+        {
+          "periodStart": "2018-12-01",
+          "amount": 124.4
+        },
+        {
+          "periodStart": "2019-04-01",
+          "amount": 132.1
+        },
+        {
+          "periodStart": "2019-09-01",
+          "amount": 118.6
+        },
+        {
+          "periodStart": "2019-12-01",
+          "amount": 126.5
+        },
+        {
+          "periodStart": "2020-07-01",
+          "amount": 58.9
+        },
+        {
+          "periodStart": "2020-10-01",
+          "amount": 160.5
+        },
+        {
+          "periodStart": "2021-02-01",
+          "amount": 149.8
+        },
+        {
+          "periodStart": "2021-06-01",
+          "amount": 181.0
+        },
+        {
+          "periodStart": "2021-10-01",
+          "amount": 0.0
+        },
+        {
+          "periodStart": "2022-02-01",
+          "amount": 208.6
+        },
+        {
+          "periodStart": "2022-06-01",
+          "amount": 160.4
+        },
+        {
+          "periodStart": "2022-10-01",
+          "amount": 176.1
+        },
+        {
+          "periodStart": "2023-02-01",
+          "amount": 207.2
+        },
+        {
+          "periodStart": "2023-07-01",
+          "amount": 204.4
+        },
+        {
+          "periodStart": "2023-10-01",
+          "amount": 111.4
+        },
+        {
+          "periodStart": "2024-02-01",
+          "amount": 34.4
+        },
+        {
+          "periodStart": "2024-04-01",
+          "amount": 190.6
+        },
+        {
+          "periodStart": "2024-08-01",
+          "amount": 144.1
+        },
+        {
+          "periodStart": "2024-12-01",
+          "amount": 194.5
+        },
+        {
+          "periodStart": "2025-04-01",
+          "amount": 157.6
+        },
+        {
+          "periodStart": "2025-08-01",
+          "amount": 201.5
+        },
+        {
+          "periodStart": "2025-12-01",
+          "amount": 185.9
+        },
+        {
+          "periodStart": "2026-04-01",
+          "amount": 144.2
+        }
+      ]
+    },
+    {
+      "name": "Rates & Gov Rent",
+      "cycleMonths": 3,
+      "reminders": [],
+      "bills": [
+        {
+          "periodStart": "2020-07-01",
+          "amount": 1945.0
+        },
+        {
+          "periodStart": "2020-10-01",
+          "amount": 1943.0
+        },
+        {
+          "periodStart": "2021-01-01",
+          "amount": 1945.0
+        },
+        {
+          "periodStart": "2021-04-01",
+          "amount": 1841.0
+        },
+        {
+          "periodStart": "2021-07-01",
+          "amount": 1841.0
+        },
+        {
+          "periodStart": "2021-10-01",
+          "amount": 2340.0
+        },
+        {
+          "periodStart": "2022-01-01",
+          "amount": 2341.0
+        },
+        {
+          "periodStart": "2022-04-01",
+          "amount": 1841.0
+        },
+        {
+          "periodStart": "2022-07-01",
+          "amount": 1841.0
+        },
+        {
+          "periodStart": "2022-10-01",
+          "amount": 2341.0
+        },
+        {
+          "periodStart": "2023-01-01",
+          "amount": 2340.0
+        },
+        {
+          "periodStart": "2023-04-01",
+          "amount": 2442.0
+        },
+        {
+          "periodStart": "2023-07-01",
+          "amount": 2442.0
+        },
+        {
+          "periodStart": "2023-10-01",
+          "amount": 3441.0
+        },
+        {
+          "periodStart": "2024-01-01",
+          "amount": 2875.0
+        },
+        {
+          "periodStart": "2024-04-01",
+          "amount": 1875.0
+        },
+        {
+          "periodStart": "2024-07-01",
+          "amount": 2875.0
+        },
+        {
+          "periodStart": "2024-10-01",
+          "amount": 2876.0
+        },
+        {
+          "periodStart": "2025-01-01",
+          "amount": 2875.0
+        },
+        {
+          "periodStart": "2025-04-01",
+          "amount": 2660.0
+        },
+        {
+          "periodStart": "2025-07-01",
+          "amount": 3161.0
+        },
+        {
+          "periodStart": "2025-10-01",
+          "amount": 3161.0
+        },
+        {
+          "periodStart": "2026-01-01",
+          "amount": 3161.0
+        },
+        {
+          "periodStart": "2026-04-01",
+          "amount": 2756.0
+        }
+      ]
+    }
+  ],
+  "reviewFlags": [
+    "醫療 (Prudential, ended 2020): currency of 158.39 + 511.01 not stated — seeded as HKD.",
+    "大病醫療 (Prudential, from Aug 2019): only one premium row and no payments — seeded as ENDED. Confirm whether it is still active and its currency.",
+    "家務助理保險: first term 11 Mar 2024 – 10 Mar 2026 spans two years at HK$231.39/yr; payment date reads '11/3/20205' — seeded as 11 Mar 2024.",
+    "年金 2025: seven HK$10k instalment dates but premium is HK$60,075.75 — last (21 Jul) seeded as HK$75.75.",
+    "年金 2026: six instalment dates = HK$60,000; HK$75.75 remainder has no recorded payment.",
+    "'DBS' payment method (Bupa 2021–23, 儲蓄 autopay 2021–23): card or bank account?",
+    "Claude Pro: source shows one month (24 Mar – 23 Apr 2026). Seeded as an active monthly subscription — confirm.",
+    "HKBN mobile, Claude Pro, SurfShark: no payment method in source.",
+    "Patreon: source says $1,632/year ($159/month) — seeded as HK$1,632 yearly.",
+    "Google One is listed under 'iCloud' in Home Summary.",
+    "Broadband: Navigator contracts overlap (old to 8 Sep 2026, new from 17 Apr 2026) — seeded as given.",
+    "Utilities: date column has mixed formats; rows without a date are assigned to the month above. Electricity Nov 2022 is '—' (skipped).",
+    "Rates & Gov Rent: Apr 2024 HK$1,875 looks low vs HK$2,875 either side; Oct 2023 HK$3,441 looks high vs HK$2,442 — typos?",
+    "Rates & Gov Rent Jul 2026, Water Aug 2026, Electricity Sep 2026: not in source (will show as 'To record').",
+    "Utility reminder lead times: not set yet (no payment history in source).",
+    "Card expiry dates: none in source — add in the app."
+  ]
+}

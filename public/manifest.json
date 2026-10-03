@@ -1,0 +1,9 @@
+{
+  "name": "Subscription & Bill Manager",
+  "short_name": "Bills",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F3EF",
+  "theme_color": "#0B5D52",
+  "icons": []
+}
