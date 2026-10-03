@@ -152,11 +152,14 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
                         {b.credit ? ` · credit ${money(Math.abs(Number(b.credit)))}` : ""}
                       </span>
                     </span>
-                    {yoy !== null && Math.abs(yoy) >= 0.05 && (
-                      <Pill tone={yoy >= 10 ? "orange" : yoy <= -10 ? "teal" : "grey"}>
-                        {yoy > 0 ? "▲" : "▼"} {Math.abs(yoy).toFixed(1)}%
-                      </Pill>
-                    )}
+                    {yoy !== null &&
+                      (Math.abs(yoy) < 0.05 ? (
+                        <Pill tone="teal">▬ 0%</Pill>
+                      ) : (
+                        <Pill tone={yoy >= 10 ? "orange" : yoy <= -10 ? "teal" : "grey"}>
+                          {yoy > 0 ? "▲" : "▼"} {Math.abs(yoy).toFixed(1)}%
+                        </Pill>
+                      ))}
                     <span className="w-20 text-right text-sm font-bold">{money(amt)}</span>
                   </Link>
                 </li>

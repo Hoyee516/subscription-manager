@@ -91,6 +91,7 @@ model PaymentMethod {
   expiryYear   Int?
   isActive     Boolean           @default(true)
   createdAt    DateTime          @default(now())
+  items        Item[]
   terms        Term[]
   payments     Payment[]
   utilityBills UtilityBill[]
@@ -100,28 +101,30 @@ model PaymentMethod {
 
 // One thing you pay for: a subscription, contract, policy, pass or trial.
 model Item {
-  id            String     @id @default(uuid())
-  userId        String
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  vendor        String
-  categoryGroup String // "Insurance", "Telecom", "Software", "Creator Tools", "Memberships"
-  category      String // "Medical", "Broadband", "AI Tools", ...
-  type          ItemType
-  status        ItemStatus @default(ACTIVE)
-  isSavings     Boolean    @default(false) // 儲蓄 / 年金: shown apart from spending MRC
-  autoRenew     Boolean    @default(false)
-  parentId      String? // riders and add-ons sit under their main item
-  parent        Item?      @relation("ItemRiders", fields: [parentId], references: [id], onDelete: Cascade)
-  riders        Item[]     @relation("ItemRiders")
-  cancelUrl     String?
-  notes         String?
-  calEventId    String? // Google Calendar event (Phase 3)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  terms         Term[]
-  reminders     Reminder[]
-  alerts        Alert[]
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  vendor          String
+  categoryGroup   String // "Insurance", "Telecom", "Software", "Creator Tools", "Memberships"
+  category        String // "Medical", "Broadband", "AI Tools", ...
+  type            ItemType
+  status          ItemStatus     @default(ACTIVE)
+  isSavings       Boolean        @default(false) // 儲蓄 / 年金: shown apart from spending MRC
+  autoRenew       Boolean        @default(false)
+  parentId        String? // riders and add-ons sit under their main item
+  parent          Item?          @relation("ItemRiders", fields: [parentId], references: [id], onDelete: Cascade)
+  riders          Item[]         @relation("ItemRiders")
+  paymentMethodId String? // "Charged to": the card/account this item is billed to
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  cancelUrl       String?
+  notes           String?
+  calEventId      String? // Google Calendar event (Phase 3)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  terms           Term[]
+  reminders       Reminder[]
+  alerts          Alert[]
 
   @@index([userId, status])
 }
@@ -141,7 +144,7 @@ model Term {
   cycleUnit        CycleUnit
   cycleCount       Int            @default(1)
   commitmentMonths Int?
-  paymentMethodId  String?
+  paymentMethodId  String? // legacy: superseded by Item.paymentMethodId; no longer edited in the app
   paymentMethod    PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   notes            String?
   payments         Payment[]

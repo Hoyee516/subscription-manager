@@ -8,12 +8,10 @@ export default function TermForm({
   itemId,
   termId,
   d,
-  methods,
 }: {
   itemId: string;
   termId: string | null;
   d: TermDefaults;
-  methods: { id: string; label: string }[];
 }) {
   const { pending, run } = useAction();
   return (
@@ -26,7 +24,7 @@ export default function TermForm({
       }}
     >
       <Card className="flex flex-col gap-3.5">
-        <TermFields d={d} methods={methods} />
+        <TermFields d={d} />
       </Card>
       <button type="submit" disabled={pending} className={btnPrimary}>
         {pending ? "Saving…" : termId ? "Save term" : "Add term"}

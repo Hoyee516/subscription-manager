@@ -56,7 +56,6 @@ function readItemFields(fd: FormData) {
     type: type as (typeof ITEM_TYPES)[number]["value"],
     autoRenew: fd.get("autoRenew") === "on",
     isSavings: fd.get("isSavings") === "on",
-    cancelUrl: optStr(fd, "cancelUrl"),
     notes: optStr(fd, "notes"),
   };
 }
@@ -69,7 +68,6 @@ function readTermFields(fd: FormData) {
   const endDate = parseDay(fd.get("endDate"));
   if (endDate && endDate < startDate) return null;
   const cycleCount = Math.max(1, parseInt(str(fd, "cycleCount") || "1", 10) || 1);
-  const commitment = parseInt(str(fd, "commitmentMonths"), 10);
   return {
     startDate,
     endDate,
@@ -79,7 +77,6 @@ function readTermFields(fd: FormData) {
     amountHkd: decimal(fd, "amountHkd"),
     cycleUnit: cycleUnit as (typeof CYCLE_UNITS)[number]["value"],
     cycleCount,
-    commitmentMonths: Number.isFinite(commitment) && commitment > 0 ? commitment : null,
     notes: optStr(fd, "termNotes"),
   };
 }
@@ -93,7 +90,7 @@ export async function createItem(fd: FormData): Promise<ActionResult> {
   const paymentMethodId = await ownMethod(userId, optStr(fd, "paymentMethodId"));
 
   const created = await prisma.item.create({
-    data: { ...item, userId, terms: { create: { ...term, paymentMethodId } } },
+    data: { ...item, userId, paymentMethodId, terms: { create: term } },
   });
   revalidatePath("/bills");
   return { ok: true, id: created.id };
@@ -104,7 +101,8 @@ export async function updateItem(itemId: string, fd: FormData): Promise<ActionRe
   if (!(await ownItem(userId, itemId))) return fail("Item not found.");
   const item = readItemFields(fd);
   if (!item) return fail("Fill in name, vendor, category and billing type.");
-  await prisma.item.update({ where: { id: itemId }, data: item });
+  const paymentMethodId = await ownMethod(userId, optStr(fd, "paymentMethodId"));
+  await prisma.item.update({ where: { id: itemId }, data: { ...item, paymentMethodId } });
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
   return { ok: true, id: itemId };
@@ -134,14 +132,13 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
   if (!(await ownItem(userId, itemId))) return fail("Item not found.");
   const term = readTermFields(fd);
   if (!term) return fail("Check start date, amount and cycle (end date can't be before start).");
-  const paymentMethodId = await ownMethod(userId, optStr(fd, "paymentMethodId"));
 
   if (termId) {
     const t = await ownTerm(userId, termId);
     if (!t || t.itemId !== itemId) return fail("Term not found.");
-    await prisma.term.update({ where: { id: termId }, data: { ...term, paymentMethodId } });
+    await prisma.term.update({ where: { id: termId }, data: term });
   } else {
-    await prisma.term.create({ data: { ...term, itemId, paymentMethodId } });
+    await prisma.term.create({ data: { ...term, itemId } });
   }
   revalidatePath(`/bills/${itemId}`);
   revalidatePath("/bills");

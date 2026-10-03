@@ -11,8 +11,6 @@ export type TermDefaults = {
   amountHkd: string;
   cycleUnit: string;
   cycleCount: string;
-  commitmentMonths: string;
-  paymentMethodId: string;
   notes: string;
 };
 
@@ -25,13 +23,11 @@ export const emptyTerm: TermDefaults = {
   amountHkd: "",
   cycleUnit: "MONTH",
   cycleCount: "1",
-  commitmentMonths: "",
-  paymentMethodId: "",
   notes: "",
 };
 
 /** Inputs for one term. Field names match readTermFields() in actions/items.ts. */
-export default function TermFields({ d, methods }: { d: TermDefaults; methods: { id: string; label: string }[] }) {
+export default function TermFields({ d }: { d: TermDefaults }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-2.5">
@@ -74,21 +70,6 @@ export default function TermFields({ d, methods }: { d: TermDefaults; methods: {
         </Field>
         <Field label="HKD equivalent" htmlFor="amountHkd">
           <input id="amountHkd" name="amountHkd" inputMode="decimal" placeholder="If billed in USD" defaultValue={d.amountHkd} className={inputCls} />
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <Field label="Paid with" htmlFor="paymentMethodId">
-          <select id="paymentMethodId" name="paymentMethodId" defaultValue={d.paymentMethodId} className={inputCls}>
-            <option value="">Not set</option>
-            {methods.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Contract months" htmlFor="commitmentMonths">
-          <input id="commitmentMonths" name="commitmentMonths" type="number" min={1} placeholder="Contracts only" defaultValue={d.commitmentMonths} className={inputCls} />
         </Field>
       </div>
       <Field label="Term notes" htmlFor="termNotes">

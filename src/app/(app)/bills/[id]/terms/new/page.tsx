@@ -2,23 +2,26 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { addDays, isoDay } from "@/lib/dates";
-import { getMethods, termToDefaults } from "@/lib/lookups";
+import { termToDefaults } from "@/lib/lookups";
 import { stepCycle, type CycleUnitName } from "@/lib/billing";
 import TermForm from "@/components/TermForm";
 import { emptyTerm } from "@/components/TermFields";
+import Link from "next/link";
 import { BackBar } from "@/components/ui";
 
 // New term, prefilled from the latest one: starts the day after it ends
-// (or one cycle later for open-ended terms), same price, cycle and card.
+// (or one cycle later for open-ended terms), same price and cycle.
 export default async function NewTermPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
   const item = await prisma.item.findFirst({
     where: { id, userId },
-    include: { terms: { orderBy: { startDate: "desc" }, take: 1 } },
+    include: {
+      terms: { orderBy: { startDate: "desc" }, take: 1 },
+      riders: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+    },
   });
   if (!item) notFound();
-  const methods = await getMethods(userId);
 
   const last = item.terms[0];
   let d = emptyTerm;
@@ -43,7 +46,21 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
       <p className="mb-4 px-1 text-[13px] text-muted">
         {item.name} · prefilled from the last term — change the price if it went up
       </p>
-      <TermForm itemId={id} termId={null} d={d} methods={methods} />
+      {item.riders.length > 0 && (
+        <p className="mb-3 rounded-xl bg-hike-soft px-3 py-2.5 text-[13px] text-hike-ink">
+          Also add the new year for{" "}
+          {item.riders.map((r, i) => (
+            <span key={r.id}>
+              {i > 0 && ", "}
+              <Link href={`/bills/${r.id}/terms/new`} className="font-bold underline">
+                {r.name}
+              </Link>
+            </span>
+          ))}
+          .
+        </p>
+      )}
+      <TermForm itemId={id} termId={null} d={d} />
     </>
   );
 }

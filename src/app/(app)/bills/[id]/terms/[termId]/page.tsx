@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import { getMethods, termToDefaults } from "@/lib/lookups";
+import { termToDefaults } from "@/lib/lookups";
 import TermForm from "@/components/TermForm";
 import { BackBar } from "@/components/ui";
 
@@ -13,14 +13,13 @@ export default async function EditTermPage({ params }: { params: Promise<{ id: s
     include: { item: { select: { name: true } } },
   });
   if (!term) notFound();
-  const methods = await getMethods(userId);
 
   return (
     <>
       <BackBar href={`/bills/${id}`} label="Back to item" />
       <h1 className="px-1 text-[26px] font-extrabold tracking-tight">Edit term</h1>
       <p className="mb-4 px-1 text-[13px] text-muted">{term.item.name}</p>
-      <TermForm itemId={id} termId={termId} d={termToDefaults(term)} methods={methods} />
+      <TermForm itemId={id} termId={termId} d={termToDefaults(term)} />
     </>
   );
 }

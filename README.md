@@ -68,3 +68,11 @@ npx tsx --env-file=.env prisma/fixes/2026-10-03-corrections.ts
 ```
 
 It's safe to run twice. Afterwards: 7 payment methods, 95 utility bills.
+
+### "Charged to" card moved to the item (3 Oct 2026)
+
+After pulling this change:
+
+```bash
+npx prisma db push && npx prisma generate && npx tsx --env-file=.env prisma/fixes/2026-10-03-item-card.ts
+```

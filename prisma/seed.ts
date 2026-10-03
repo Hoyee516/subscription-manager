@@ -98,6 +98,7 @@ async function main() {
   const itemIds = new Map<string, string>();
 
   for (const it of ordered) {
+    const lastCard = [...it.terms].reverse().find((t) => t.paymentMethod)?.paymentMethod ?? null;
     const item = await prisma.item.create({
       data: {
         userId: user.id,
@@ -111,6 +112,7 @@ async function main() {
         autoRenew: it.autoRenew,
         notes: it.notes ?? null,
         parentId: it.parentKey ? itemIds.get(it.parentKey) ?? null : null,
+        paymentMethodId: pmId(lastCard),
         reminders: { create: it.reminders.map((r) => ({ offset: r.offset, unit: r.unit })) },
       },
     });

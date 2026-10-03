@@ -5,17 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
 import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName, type LeadUnitName } from "@/lib/billing";
+import { loadRates, toHkd } from "@/lib/fx";
 import { BackBar, Card, Pill, SectionLabel, btnPrimary } from "@/components/ui";
 import ReminderEditor from "@/components/ReminderEditor";
 import ItemStatusActions from "@/components/ItemStatusActions";
 
-const CHANNEL_LABEL: Record<string, string> = {
-  CARD_ONLINE: "card online",
-  IN_PERSON: "in person",
-  FPS: "FPS",
-  AUTOPAY: "autopay",
-  OTHER: "other",
-};
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
@@ -24,14 +18,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     where: { id, userId },
     include: {
       parent: { select: { id: true, name: true } },
-      riders: { include: { terms: { orderBy: { startDate: "desc" }, take: 1 } } },
+      paymentMethod: { select: { label: true } },
+      riders: { orderBy: { name: "asc" }, include: { terms: { orderBy: { startDate: "asc" } } } },
       reminders: { orderBy: { createdAt: "asc" } },
       terms: {
         orderBy: { startDate: "asc" },
-        include: {
-          paymentMethod: { select: { label: true } },
-          payments: { orderBy: { paidAt: "asc" }, include: { paymentMethod: { select: { label: true } } } },
-        },
+        include: { payments: { orderBy: { paidAt: "asc" } } },
       },
     },
   });
@@ -42,6 +34,17 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const latest = item.terms[item.terms.length - 1];
   const nd = nextDate(type, item.status === "ACTIVE", item.terms, today);
 
+  const rates = await loadRates(latest ? [latest.currency] : []);
+  const head = latest
+    ? (() => {
+        const amt = Number(latest.amount);
+        const { hkd, approx } = toHkd(amt, latest.currency, latest.amountHkd ? Number(latest.amountHkd) : null, rates);
+        return latest.currency === "HKD" || hkd === null
+          ? { main: money(amt, latest.currency), original: null }
+          : { main: `${approx ? "≈" : ""}${money(hkd)}`, original: `(${money(amt, latest.currency)})` };
+      })()
+    : null;
+
   // Newest first, each with its change vs the previous term in the same currency and cycle.
   const terms = item.terms
     .map((t, i) => {
@@ -49,8 +52,29 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       const amt = Number(t.amount);
       const comparable = prev && prev.currency === t.currency && prev.cycleUnit === t.cycleUnit && prev.cycleCount === t.cycleCount && Number(prev.amount) > 0;
       const change = comparable ? (amt / Number(prev.amount) - 1) * 100 : null;
-      const paid = t.payments.reduce((s, p) => s + Number(p.amountHkd), 0);
-      return { t, amt, change, paid };
+      const paid = Math.round(t.payments.reduce((s, p) => s + Number(p.amountHkd), 0) * 100) / 100;
+      // Full amount in HKD, where known, to tell whether instalments are complete.
+      const full = t.amountHkd ? Number(t.amountHkd) : t.currency === "HKD" ? amt : null;
+      const fullyPaid = t.payments.length > 0 && (full === null || paid >= full - 0.01);
+      const months =
+        type === "CONTRACT" && t.endDate ? Math.round((t.endDate.getTime() - t.startDate.getTime()) / 86_400_000 / 30.44) : null;
+      // Riders (e.g. 治療保 on 危疾(租)) for the same policy year, matched by start date.
+      const riders = item.riders.flatMap((r) => {
+        const j = r.terms.findIndex((rt) => rt.startDate.getTime() === t.startDate.getTime());
+        if (j < 0) return [];
+        const rt = r.terms[j];
+        const rp = r.terms[j - 1];
+        const ramt = Number(rt.amount);
+        const rchange = rp && rp.currency === rt.currency && Number(rp.amount) > 0 ? (ramt / Number(rp.amount) - 1) * 100 : null;
+        return [{ id: r.id, name: r.name, amt: ramt, currency: rt.currency, hkd: rt.amountHkd ? Number(rt.amountHkd) : null, change: rchange }];
+      });
+      const sameCurrency = riders.every((r) => r.currency === t.currency);
+      const total = riders.length > 0 && sameCurrency ? Math.round((amt + riders.reduce((x, r) => x + r.amt, 0)) * 100) / 100 : null;
+      const totalHkd =
+        riders.length > 0 && t.amountHkd && riders.every((r) => r.hkd !== null)
+          ? Math.round((Number(t.amountHkd) + riders.reduce((x, r) => x + (r.hkd ?? 0), 0)) * 100) / 100
+          : null;
+      return { t, amt, change, paid, fullyPaid, months, riders, total, totalHkd };
     })
     .reverse();
 
@@ -87,17 +111,30 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             </>
           )}
         </p>
-        {latest && (
-          <p className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-[30px] font-extrabold">{money(Number(latest.amount), latest.currency)}</span>
-            <span className="text-sm text-muted">{cycleLabel(latest.cycleUnit as CycleUnitName, latest.cycleCount)}</span>
-          </p>
+        {latest && head && (
+          <>
+            <p className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-[30px] font-extrabold">{head.main}</span>
+              <span className="text-sm text-muted">{cycleLabel(latest.cycleUnit as CycleUnitName, latest.cycleCount)}</span>
+            </p>
+            {head.original && <p className="text-[13px] text-muted">{head.original}</p>}
+          </>
         )}
         {nd && (
           <p className={`text-[13px] ${nd.past ? "font-bold text-hike-ink" : "text-muted"}`}>
             {nd.label} {fmtDay(nd.date)}
           </p>
         )}
+        <p className="text-[13px] text-muted">
+          Charged to{" "}
+          {item.paymentMethod ? (
+            <span className="font-bold text-ink">{item.paymentMethod.label}</span>
+          ) : (
+            <Link href={`/bills/${item.id}/edit`} className="font-bold text-hike-ink">
+              not set — add card
+            </Link>
+          )}
+        </p>
       </header>
 
       <div className="flex flex-col gap-3">
@@ -108,58 +145,78 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
               + Start new term
             </Link>
           </div>
-          <ul>
-            {terms.map(({ t, amt, change, paid }) => (
-              <li key={t.id} className="border-t border-[#EEEFEA] py-3 first:border-t-0">
+          <ul className="flex flex-col gap-2.5">
+            {terms.map(({ t, amt, change, paid, fullyPaid, months, riders, total, totalHkd }) => (
+              <li key={t.id} className="rounded-xl border border-[#D5D8D1] p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-bold">
                       {fmtDay(t.startDate)} – {t.endDate ? fmtDay(t.endDate) : "ongoing"}
                     </p>
-                    <p className="text-xs text-muted">
-                      {t.paymentMethod?.label ?? "No card set"}
-                      {t.commitmentMonths ? ` · ${t.commitmentMonths}-month contract` : ""}
-                      {t.amountHkd ? ` · ≈${money(Number(t.amountHkd))}` : ""}
-                    </p>
+                    {(months || t.amountHkd) && (
+                      <p className="text-xs text-muted">
+                        {[months ? `${months}-month contract` : "", t.amountHkd ? money(Number(t.amountHkd)) : ""].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     {t.notes && <p className="mt-0.5 text-xs text-muted">{t.notes}</p>}
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold">{money(amt, t.currency)}</p>
-                    {change !== null && Math.abs(change) >= 0.05 && (
-                      <p className={`text-xs font-bold ${change > 0 ? "text-hike-ink" : "text-brand"}`}>
-                        {change > 0 ? "▲" : "▼"} {Math.abs(change).toFixed(1)}%
-                      </p>
-                    )}
+                    {change !== null && <p className="text-xs font-bold"><Change pct={change} /></p>}
                   </div>
                 </div>
+
+                {riders.map((r) => (
+                  <Link key={r.id} href={`/bills/${r.id}`} className="mt-1.5 flex items-start justify-between gap-3">
+                    <span className="min-w-0 text-[13px]">
+                      <span className="font-bold">+ {r.name}</span>
+                      {r.hkd !== null && <span className="block text-xs text-muted">{money(r.hkd)}</span>}
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-[13px] font-bold">{money(r.amt, r.currency)}</span>
+                      {r.change !== null && (
+                        <span className="block text-xs font-bold">
+                          <Change pct={r.change} />
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                ))}
+                {total !== null && (
+                  <div className="mt-1.5 flex items-start justify-between gap-3 border-t border-line pt-1.5">
+                    <span className="text-[13px] font-bold">
+                      Year total
+                      {totalHkd !== null && <span className="block text-xs font-normal text-muted">{money(totalHkd)}</span>}
+                    </span>
+                    <span className="text-[13px] font-extrabold">{money(total, t.currency)}</span>
+                  </div>
+                )}
 
                 {t.payments.length > 0 && (
                   <ul className="mt-2 flex flex-col gap-1 rounded-lg bg-[#F6F6F3] px-2.5 py-2">
                     {t.payments.map((p) => (
                       <li key={p.id}>
-                        <Link href={`/bills/${item.id}/payments/${p.id}`} className="flex justify-between gap-2 text-xs">
-                          <span className="text-muted">
-                            Paid {fmtDay(p.paidAt)}
-                            {p.paymentMethod ? ` · ${p.paymentMethod.label}` : ""}
-                            {p.channel ? ` · ${CHANNEL_LABEL[p.channel]}` : ""}
-                          </span>
-                          <span className="font-bold">{money(Number(p.amountHkd))}</span>
+                        <Link href={`/bills/${item.id}/payments/${p.id}`} className="text-xs font-bold text-ink">
+                          💳 Paid {fmtDay(p.paidAt)}
                         </Link>
                       </li>
                     ))}
-                    {t.payments.length > 1 && (
-                      <li className="flex justify-between border-t border-line pt-1 text-xs">
-                        <span className="text-muted">Total paid</span>
-                        <span className="font-bold">{money(Math.round(paid * 100) / 100)}</span>
-                      </li>
-                    )}
+                    {t.payments.length > 1 && <li className="border-t border-line pt-1 text-xs text-muted">Total paid {money(paid)}</li>}
                   </ul>
                 )}
 
                 <div className="mt-2 flex gap-4">
-                  <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-brand">
-                    Log payment
-                  </Link>
+                  {!fullyPaid ? (
+                    <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-brand">
+                      {t.payments.length > 0 ? "Log next payment" : "Log payment"}
+                    </Link>
+                  ) : (
+                    t.payments.length === 1 && (
+                      <Link href={`/bills/${item.id}/payments/${t.payments[0].id}`} className="text-[13px] font-bold text-brand">
+                        Edit payment
+                      </Link>
+                    )
+                  )}
                   <Link href={`/bills/${item.id}/terms/${t.id}`} className="text-[13px] font-bold text-muted">
                     Edit term
                   </Link>
@@ -175,7 +232,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             {item.riders.map((r) => (
               <Link key={r.id} href={`/bills/${r.id}`} className="flex justify-between text-sm">
                 <span className="font-bold">{r.name}</span>
-                <span>{r.terms[0] ? money(Number(r.terms[0].amount), r.terms[0].currency) : "—"}</span>
+                <span>{r.terms.length ? money(Number(r.terms[r.terms.length - 1].amount), r.terms[r.terms.length - 1].currency) : "—"}</span>
               </Link>
             ))}
           </Card>
@@ -209,5 +266,15 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
         <ItemStatusActions itemId={item.id} status={item.status} />
       </div>
     </>
+  );
+}
+
+/** ▲ red for increases, ▼ green for decreases, green "▬ 0%" when unchanged. */
+function Change({ pct }: { pct: number }) {
+  if (Math.abs(pct) < 0.05) return <span className="text-brand">▬ 0%</span>;
+  return (
+    <span className={pct > 0 ? "text-hike-ink" : "text-brand"}>
+      {pct > 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+    </span>
   );
 }

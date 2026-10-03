@@ -25,9 +25,26 @@ const PILL = {
   blue: "bg-info-soft text-info",
   grey: "bg-[#E9EAE6] text-[#45505A]",
   purple: "bg-[#E8E2F4] text-[#4B3780]",
+  pink: "bg-[#F8E1EC] text-[#8E2457]",
+  yellow: "bg-[#FBF0C2] text-[#735A00]",
 } as const;
 
-export function Pill({ tone = "grey", children }: { tone?: keyof typeof PILL; children: React.ReactNode }) {
+export type PillTone = keyof typeof PILL;
+
+/** Colour per category group (bills list headers). */
+export function groupTone(group: string, isSavings = false): PillTone {
+  if (isSavings) return "purple";
+  const map: Record<string, PillTone> = {
+    Insurance: "orange",
+    Telecom: "blue",
+    Software: "teal",
+    "Creator Tools": "pink",
+    Memberships: "yellow",
+  };
+  return map[group] ?? "grey";
+}
+
+export function Pill({ tone = "grey", children }: { tone?: PillTone; children: React.ReactNode }) {
   return (
     <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${PILL[tone]}`}>{children}</span>
   );

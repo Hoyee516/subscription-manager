@@ -14,7 +14,7 @@ export type ItemDefaults = {
   type: ItemTypeName;
   autoRenew: boolean;
   isSavings: boolean;
-  cancelUrl: string;
+  paymentMethodId: string;
   notes: string;
 };
 
@@ -49,7 +49,6 @@ export default function ItemForm({
       }}
     >
       <Card className="flex flex-col gap-3.5">
-        <SectionLabel>What it is</SectionLabel>
         <Field label="Name" htmlFor="name">
           <input id="name" name="name" required defaultValue={d.name} className={inputCls} />
         </Field>
@@ -64,6 +63,16 @@ export default function ItemForm({
             <input id="category" name="category" list="categories" required defaultValue={d.category} className={inputCls} />
           </Field>
         </div>
+        <Field label="Charged to" htmlFor="paymentMethodId" hint="The card or account this is billed to. Prefills Log payment.">
+          <select id="paymentMethodId" name="paymentMethodId" defaultValue={d.paymentMethodId} className={inputCls}>
+            <option value="">Not set</option>
+            {methods.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </Field>
         <datalist id="groups">
           {groups.map((g) => (
             <option key={g} value={g} />
@@ -113,14 +122,11 @@ export default function ItemForm({
       {isNew && (
         <Card className="flex flex-col gap-3.5">
           <SectionLabel>First term</SectionLabel>
-          <TermFields d={emptyTerm} methods={methods} />
+          <TermFields d={emptyTerm} />
         </Card>
       )}
 
       <Card className="flex flex-col gap-3.5">
-        <Field label="Cancellation link" htmlFor="cancelUrl">
-          <input id="cancelUrl" name="cancelUrl" type="url" placeholder="https://" defaultValue={d.cancelUrl} className={inputCls} />
-        </Field>
         <Field label="Notes" htmlFor="notes">
           <textarea id="notes" name="notes" rows={3} defaultValue={d.notes} className={`${inputCls} py-2.5`} />
         </Field>

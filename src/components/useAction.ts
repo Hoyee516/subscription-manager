@@ -17,8 +17,11 @@ export function useAction() {
         return;
       }
       toast.success(opts.success);
+      // Navigate OR refresh — calling refresh() right after push() can cancel the
+      // navigation and leave you on the form. The action's revalidatePath()
+      // already makes the destination page load fresh data.
       if (opts.goTo) router.push(opts.goTo(res.id));
-      router.refresh();
+      else router.refresh();
     });
   }
 

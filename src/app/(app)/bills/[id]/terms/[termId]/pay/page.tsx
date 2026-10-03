@@ -12,7 +12,7 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const { id, termId } = await params;
   const term = await prisma.term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
-    include: { item: { select: { name: true } }, payments: { select: { amountHkd: true } } },
+    include: { item: { select: { name: true, paymentMethodId: true } }, payments: { select: { amountHkd: true } } },
   });
   if (!term) notFound();
   const methods = await getMethods(userId);
@@ -37,7 +37,7 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
         d={{
           paidAt: isoDay(todayHK()),
           amountHkd: left ? String(left) : "",
-          paymentMethodId: term.paymentMethodId ?? "",
+          paymentMethodId: term.item.paymentMethodId ?? "",
           channel: "",
           batchRef: "",
           note: "",

@@ -8,7 +8,7 @@ export const ITEM_TYPES: { value: ItemTypeName; label: string; hint: string }[] 
   { value: "RECURRING", label: "Recurring", hint: "Charges every cycle until you cancel (Patreon, Norton)." },
   { value: "CONTRACT", label: "Contract", hint: "Fixed commitment with an end date (HKBN, Navigator)." },
   { value: "POLICY", label: "Policy", hint: "Insurance policy year, paid before each year starts." },
-  { value: "PASS", label: "Pass", hint: "One-off period you buy when needed (CapCut, Uppbeat)." },
+  { value: "PASS", label: "One-off", hint: "A single period you buy when needed (CapCut, Uppbeat)." },
   { value: "TRIAL", label: "Trial", hint: "Free until it converts." },
   { value: "PREPAID", label: "Prepaid", hint: "Several months or years paid up front (SurfShark)." },
 ];
@@ -102,3 +102,19 @@ export function nextDate(type: ItemTypeName, active: boolean, terms: TermDates[]
       return t.endDate ? mk(t.endDate, "Ends", "Ended") : null;
   }
 }
+
+export type Urgency = "green" | "orange" | "red" | null;
+
+/** Red: under 1 month away or overdue · Orange: 1–3 months · Green: more than 3 months. */
+export function urgency(date: Date | null | undefined, today: Date): Urgency {
+  if (!date) return null;
+  if (date < addMonths(today, 1)) return "red";
+  if (date <= addMonths(today, 3)) return "orange";
+  return "green";
+}
+
+export const URGENCY_BORDER: Record<Exclude<Urgency, null>, string> = {
+  green: "border-[#3B9B6D]",
+  orange: "border-[#E08A3C]",
+  red: "border-[#D64545]",
+};

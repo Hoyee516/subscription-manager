@@ -31,8 +31,6 @@ type TermRow = {
   amountHkd: { toString(): string } | null;
   cycleUnit: string;
   cycleCount: number;
-  commitmentMonths: number | null;
-  paymentMethodId: string | null;
   notes: string | null;
 };
 
@@ -46,8 +44,6 @@ export function termToDefaults(t: TermRow): TermDefaults {
     amountHkd: t.amountHkd?.toString() ?? "",
     cycleUnit: t.cycleUnit,
     cycleCount: String(t.cycleCount),
-    commitmentMonths: t.commitmentMonths ? String(t.commitmentMonths) : "",
-    paymentMethodId: t.paymentMethodId ?? "",
     notes: t.notes ?? "",
   };
 }

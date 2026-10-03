@@ -29,7 +29,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
             type: item.type as ItemTypeName,
             autoRenew: item.autoRenew,
             isSavings: item.isSavings,
-            cancelUrl: item.cancelUrl ?? "",
+            paymentMethodId: item.paymentMethodId ?? "",
             notes: item.notes ?? "",
           }}
           methods={methods}
