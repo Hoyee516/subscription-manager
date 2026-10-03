@@ -13,9 +13,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Bills",
+  title: "Bills Manager",
   description: "Subscriptions, policies and recurring bills",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Bills" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Bills Manager" },
   manifest: "/manifest.json",
 };
 
