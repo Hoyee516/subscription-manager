@@ -127,7 +127,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
   if (!(await ownItem(userId, itemId))) return fail("Item not found.");
   const riders = await prisma.item.findMany({ where: { parentId: itemId }, select: { id: true } });
   await deleteItemEvents(userId, [itemId, ...riders.map((r) => r.id)]);
-  await prisma.item.delete({ where: { id: itemId } }); // cascades to riders, terms, payments, reminders
+  await prisma.item.delete({ where: { id: itemId } }); // cascades to riders, terms, payments
   revalidatePath("/bills");
   return { ok: true };
 }

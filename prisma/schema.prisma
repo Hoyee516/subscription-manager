@@ -33,13 +33,6 @@ enum CycleUnit {
   ONCE // whole term paid once (passes, prepaid, trials)
 }
 
-enum LeadUnit {
-  HOUR
-  DAY
-  WEEK
-  MONTH
-}
-
 enum PaymentMethodType {
   CARD
   BANK
@@ -131,7 +124,6 @@ model Item {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   terms           Term[]
-  reminders       Reminder[]
   alerts          Alert[]
 
   @@index([userId, status])
@@ -212,7 +204,6 @@ model Utility {
   calEventHash String?
   createdAt    DateTime      @default(now())
   bills        UtilityBill[]
-  reminders    Reminder[]
   alerts       Alert[]
 
   @@unique([userId, name])
@@ -236,17 +227,6 @@ model UtilityBill {
   @@unique([utilityId, periodStart])
 }
 
-// "N units before due" — configurable per item or utility.
-model Reminder {
-  id        String   @id @default(uuid())
-  itemId    String?
-  item      Item?    @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  utilityId String?
-  utility   Utility? @relation(fields: [utilityId], references: [id], onDelete: Cascade)
-  offset    Int
-  unit      LeadUnit
-  createdAt DateTime @default(now())
-}
 
 model Alert {
   id          String    @id @default(uuid())

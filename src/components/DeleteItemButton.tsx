@@ -10,7 +10,7 @@ export default function DeleteItemButton({ itemId, name }: { itemId: string; nam
       disabled={pending}
       className="py-2 text-[13px] font-bold text-hike-ink"
       onClick={() => {
-        if (confirm(`Delete "${name}" with all its terms, payments and reminders? This can't be undone. To keep the history, use "Mark as ended" instead.`)) {
+        if (confirm(`Delete "${name}" with all its terms and payments? This can't be undone. To keep the history, use "Mark as ended" instead.`)) {
           run(() => deleteItem(itemId), { success: "Item deleted", goTo: () => "/bills" });
         }
       }}

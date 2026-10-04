@@ -30,7 +30,7 @@ type SeedTerm = {
   notes?: string;
   payments: SeedPayment[];
 };
-type SeedReminder = { offset: number; unit: Prisma.ReminderCreateInput["unit"] };
+type SeedReminder = { offset: number; unit: string }; // seed file still lists them; any → "Remind me" ticked
 type SeedItem = {
   key: string;
   parentKey?: string;
@@ -122,7 +122,7 @@ async function main() {
         notes: it.notes ?? null,
         parentId: it.parentKey ? itemIds.get(it.parentKey) ?? null : null,
         paymentMethodId: pmId(lastCard),
-        reminders: { create: it.reminders.map((r) => ({ offset: r.offset, unit: r.unit })) },
+        remind: it.reminders.length > 0,
       },
     });
     itemIds.set(it.key, item.id);
@@ -163,7 +163,7 @@ async function main() {
         userId: user.id,
         name: u.name,
         cycleMonths: u.cycleMonths,
-        reminders: { create: u.reminders.map((r) => ({ offset: r.offset, unit: r.unit })) },
+        remind: u.reminders.length > 0,
         bills: {
           create: u.bills.map((b) => ({
             periodStart: day(b.periodStart)!,

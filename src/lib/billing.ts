@@ -2,7 +2,6 @@ import { addDays, addMonths } from "./dates";
 
 export type ItemTypeName = "RECURRING" | "CONTRACT" | "POLICY" | "PASS" | "TRIAL" | "PREPAID";
 export type CycleUnitName = "DAY" | "WEEK" | "MONTH" | "YEAR" | "ONCE";
-export type LeadUnitName = "HOUR" | "DAY" | "WEEK" | "MONTH";
 
 export const ITEM_TYPES: { value: ItemTypeName; label: string; hint: string }[] = [
   { value: "RECURRING", label: "Recurring", hint: "Charges every cycle until you cancel (Patreon, Norton)." },
