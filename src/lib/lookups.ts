@@ -22,14 +22,74 @@ export async function getCategoryLists(userId: string) {
   };
 }
 
-/** Other bills that can share a combined payment: same group and vendor. */
+/**
+ * Other bills that can share a combined payment: same group and vendor.
+ * Riders aren't listed: they're paid together with their main bill.
+ */
 export async function getCombineCandidates(userId: string, itemId: string) {
   const item = await prisma.item.findFirst({ where: { id: itemId, userId }, select: { categoryGroup: true, vendor: true } });
   if (!item) return [];
   return prisma.item.findMany({
-    where: { userId, categoryGroup: item.categoryGroup, vendor: item.vendor, id: { not: itemId } },
+    where: { userId, categoryGroup: item.categoryGroup, vendor: item.vendor, id: { not: itemId }, parentId: null },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
+  });
+}
+
+/**
+ * Rider rows for the payment form. Editing (paidAt given): each rider's payment
+ * on that date. Logging new: prefilled with what's left to pay on the rider's
+ * term for the same policy year (or its latest term).
+ */
+export async function getRiderRows(userId: string, itemId: string, termStart: Date, paidAt: Date | null) {
+  const riders = await prisma.item.findMany({
+    where: { userId, parentId: itemId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      terms: {
+        orderBy: { startDate: "desc" },
+        select: { startDate: true, amount: true, currency: true, amountHkd: true, payments: { select: { id: true, paidAt: true, amountHkd: true } } },
+      },
+    },
+  });
+  return riders.map((r) => {
+    if (paidAt) {
+      const p = r.terms.flatMap((t) => t.payments).find((x) => x.paidAt.getTime() === paidAt.getTime());
+      return { itemId: r.id, name: r.name, paymentId: p?.id ?? "", amount: p ? p.amountHkd.toString() : "" };
+    }
+    const t = r.terms.find((x) => x.startDate.getTime() === termStart.getTime()) ?? r.terms[0];
+    const full = t ? (t.amountHkd ? Number(t.amountHkd) : t.currency === "HKD" ? Number(t.amount) : null) : null;
+    const left = t && full !== null ? Math.max(0, Math.round((full - t.payments.reduce((s, x) => s + Number(x.amountHkd), 0)) * 100) / 100) : null;
+    return { itemId: r.id, name: r.name, paymentId: "", amount: left ? String(left) : "" };
+  });
+}
+
+/**
+ * Rider rows for the term form. Editing (startDate given): each rider's term
+ * starting the same day. New term: prefilled from each rider's latest term.
+ */
+export async function getRiderTermRows(userId: string, itemId: string, startDate: Date | null) {
+  const riders = await prisma.item.findMany({
+    where: { userId, parentId: itemId },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      terms: { orderBy: { startDate: "desc" }, select: { id: true, startDate: true, amount: true, currency: true, amountHkd: true } },
+    },
+  });
+  return riders.map((r) => {
+    const t = startDate ? r.terms.find((x) => x.startDate.getTime() === startDate.getTime()) : r.terms[0];
+    return {
+      itemId: r.id,
+      name: r.name,
+      termId: startDate && t ? t.id : "",
+      amount: t ? t.amount.toString() : "",
+      currency: t?.currency ?? "HKD",
+      amountHkd: t?.amountHkd?.toString() ?? "",
+    };
   });
 }
 

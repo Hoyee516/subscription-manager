@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
-import { loadRates, toHkd } from "@/lib/fx";
+import { toHkd } from "@/lib/fx";
 import {
   cycleLabel,
   money,
@@ -56,15 +56,11 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
     },
   });
 
-  const rates = await loadRates(
-    items.flatMap((i) => [...i.terms.slice(-1), ...i.riders.flatMap((r) => r.terms)].map((t) => t.currency))
-  );
-
   // HKD first; original currency underneath when it isn't HKD.
   const amounts = (t: TermLike | undefined) => {
     if (!t) return { main: "—", original: null as string | null };
     const amt = Number(t.amount);
-    const { hkd, approx } = toHkd(amt, t.currency, t.amountHkd ? Number(t.amountHkd) : null, rates);
+    const { hkd, approx } = toHkd(amt, t.currency, t.amountHkd ? Number(t.amountHkd) : null);
     if (t.currency === "HKD") return { main: money(amt), original: null };
     return {
       main: hkd !== null ? `${approx ? "≈" : ""}${money(hkd)}` : money(amt, t.currency),

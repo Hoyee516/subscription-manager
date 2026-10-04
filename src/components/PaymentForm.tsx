@@ -1,6 +1,7 @@
 "use client";
+import { useState } from "react";
 import { deletePayment, savePayment } from "@/app/actions/items";
-import { CHANNELS } from "@/lib/billing";
+import { CHANNELS, money } from "@/lib/billing";
 import { useAction } from "./useAction";
 import { Card, Field, btnPrimary, inputCls } from "./ui";
 
@@ -14,6 +15,14 @@ export type PaymentDefaults = {
   note: string;
 };
 
+/** A rider of this bill, paid together with it: same date, card and channel. */
+export type RiderRow = { itemId: string; name: string; paymentId: string; amount: string };
+
+const num = (v: string) => {
+  const n = Number(v.replace(/,/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
 export default function PaymentForm({
   itemId,
   termId,
@@ -21,6 +30,8 @@ export default function PaymentForm({
   d,
   methods,
   candidates,
+  itemName,
+  riders = [],
 }: {
   itemId: string;
   termId: string;
@@ -28,8 +39,43 @@ export default function PaymentForm({
   d: PaymentDefaults;
   methods: { id: string; label: string }[];
   candidates: { id: string; name: string }[]; // same group + vendor
+  itemName: string;
+  riders?: RiderRow[];
 }) {
   const { pending, run } = useAction();
+  const [mainAmt, setMainAmt] = useState(d.amountHkd);
+  const [riderAmts, setRiderAmts] = useState<Record<string, string>>(Object.fromEntries(riders.map((r) => [r.itemId, r.amount])));
+  const subtotal = num(mainAmt) + riders.reduce((sum, r) => sum + num(riderAmts[r.itemId] ?? ""), 0);
+
+  const paidWith = (
+    <Field label="Paid with" htmlFor="paymentMethodId">
+      <select id="paymentMethodId" name="paymentMethodId" defaultValue={d.paymentMethodId} className={inputCls}>
+        <option value="">Not set</option>
+        {methods.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+  const how = (
+    <Field label="How" htmlFor="channel">
+      <select id="channel" name="channel" defaultValue={d.channel} className={inputCls}>
+        <option value="">—</option>
+        {CHANNELS.map((c) => (
+          <option key={c.value} value={c.value}>
+            {c.label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+  const paidOn = (
+    <Field label="Paid on" htmlFor="paidAt">
+      <input id="paidAt" name="paidAt" type="date" required defaultValue={d.paidAt} className={inputCls} />
+    </Field>
+  );
   return (
     <form
       className="flex flex-col gap-3"
@@ -40,42 +86,71 @@ export default function PaymentForm({
       }}
     >
       <Card className="flex flex-col gap-3.5">
-        <div className="grid grid-cols-2 gap-2.5">
-          <Field label="Paid on" htmlFor="paidAt">
-            <input id="paidAt" name="paidAt" type="date" required defaultValue={d.paidAt} className={inputCls} />
-          </Field>
-          <Field label="Amount (HKD)" htmlFor="amountHkd">
-            <input id="amountHkd" name="amountHkd" inputMode="decimal" required defaultValue={d.amountHkd} className={inputCls} />
-          </Field>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          <Field label="Paid with" htmlFor="paymentMethodId">
-            <select id="paymentMethodId" name="paymentMethodId" defaultValue={d.paymentMethodId} className={inputCls}>
-              <option value="">Not set</option>
-              {methods.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="How" htmlFor="channel">
-            <select id="channel" name="channel" defaultValue={d.channel} className={inputCls}>
-              <option value="">—</option>
-              {CHANNELS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+        {riders.length === 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-2.5">
+              {paidOn}
+              <Field label="Amount (HKD)" htmlFor="amountHkd">
+                <input id="amountHkd" name="amountHkd" inputMode="decimal" required defaultValue={d.amountHkd} className={inputCls} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              {paidWith}
+              {how}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2.5">
+              {paidOn}
+              {paidWith}
+            </div>
+            {how}
+            <Field label="Amount (HKD)" htmlFor="amountHkd" hint="Date, card and payment method above also apply to the rider.">
+              <div className="overflow-hidden rounded-xl border border-line">
+                <div className="grid grid-cols-[1fr_8rem] items-center gap-2.5 px-2.5 py-2">
+                  <span className="min-w-0 text-sm font-bold">{itemName}</span>
+                  <input
+                    id="amountHkd"
+                    name="amountHkd"
+                    inputMode="decimal"
+                    required
+                    value={mainAmt}
+                    onChange={(e) => setMainAmt(e.target.value)}
+                    className={`${inputCls} text-right`}
+                  />
+                </div>
+                {riders.map((r) => (
+                  <div key={r.itemId} className="grid grid-cols-[1fr_8rem] items-center gap-2.5 border-t border-line bg-[#F6F6F3] px-2.5 py-2">
+                    <span className="min-w-0 text-sm font-bold">
+                      ↳ {r.name}
+                      <span className="block text-xs font-semibold text-muted">Rider</span>
+                    </span>
+                    <input type="hidden" name={`riderPayment_${r.itemId}`} value={r.paymentId} />
+                    <input
+                      name={`rider_${r.itemId}`}
+                      inputMode="decimal"
+                      aria-label={`${r.name} amount (HKD)`}
+                      value={riderAmts[r.itemId] ?? ""}
+                      onChange={(e) => setRiderAmts({ ...riderAmts, [r.itemId]: e.target.value })}
+                      className={`${inputCls} text-right`}
+                    />
+                  </div>
+                ))}
+                <div className="flex justify-between border-t border-line px-2.5 py-2.5 text-sm font-extrabold">
+                  <span>This bill + rider</span>
+                  <span>{money(Math.round(subtotal * 100) / 100)}</span>
+                </div>
+              </div>
+            </Field>
+          </>
+        )}
         {candidates.length > 0 && (
           <>
             <Field
               label="Combined bill with"
               htmlFor="combinedWith"
-              hint="Other bills paid in the same charge. Their payments on the same date are linked too."
+              hint="Ticked combined bill(s) is/are logged with the same date and payment method, each for its own amount, and together share one combined total."
             >
               <div id="combinedWith" className="flex flex-col gap-1 rounded-[10px] border border-[#D5D8D1] bg-white px-3 py-1">
                 {candidates.map((c) => (
@@ -110,7 +185,7 @@ export default function PaymentForm({
           disabled={pending}
           className="py-2 text-[13px] font-bold text-hike-ink"
           onClick={() => {
-            if (confirm("Delete this payment?")) {
+            if (confirm(riders.length ? "Delete this payment and its rider payments?" : "Delete this payment?")) {
               run(() => deletePayment(paymentId), { success: "Payment deleted", goTo: () => `/bills/${itemId}` });
             }
           }}

@@ -140,6 +140,30 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
   } else {
     await prisma.term.create({ data: { ...term, itemId } });
   }
+
+  // Riders' terms for the same policy year: dates and cycle come from the main term,
+  // amounts are each rider's own. A blank amount leaves that rider alone.
+  const riders = await prisma.item.findMany({ where: { userId, parentId: itemId }, select: { id: true } });
+  for (const r of riders) {
+    const amount = decimal(fd, `riderAmount_${r.id}`);
+    if (amount === null) continue;
+    const data = {
+      startDate: term.startDate,
+      endDate: term.endDate,
+      dueDate: term.dueDate,
+      cycleUnit: term.cycleUnit,
+      cycleCount: term.cycleCount,
+      amount,
+      currency: str(fd, `riderCurrency_${r.id}`) || "HKD",
+      amountHkd: decimal(fd, `riderHkd_${r.id}`),
+    };
+    const existingId = optStr(fd, `riderTerm_${r.id}`);
+    const existing = existingId ? await prisma.term.findFirst({ where: { id: existingId, itemId: r.id }, select: { id: true } }) : null;
+    if (existing) await prisma.term.update({ where: { id: existing.id }, data });
+    else await prisma.term.create({ data: { ...data, itemId: r.id } });
+    revalidatePath(`/bills/${r.id}`);
+  }
+
   revalidatePath(`/bills/${itemId}`);
   revalidatePath("/bills");
   return { ok: true, id: itemId };
@@ -151,10 +175,35 @@ export async function deleteTerm(termId: string): Promise<ActionResult> {
   if (!t) return fail("Term not found.");
   const count = await prisma.term.count({ where: { itemId: t.itemId } });
   if (count <= 1) return fail("An item needs at least one term. Delete the item instead.");
-  await prisma.term.delete({ where: { id: termId } });
+
+  // Riders' terms for the same policy year go too, unless it's a rider's only term.
+  const { startDate } = await prisma.term.findUniqueOrThrow({ where: { id: termId }, select: { startDate: true } });
+  const riderTerms = await prisma.term.findMany({
+    where: { startDate, item: { userId, parentId: t.itemId } },
+    select: { id: true, itemId: true, item: { select: { name: true, _count: { select: { terms: true } } } } },
+  });
+  const kept = riderTerms.filter((r) => r.item._count.terms <= 1);
+  const ids = [termId, ...riderTerms.filter((r) => r.item._count.terms > 1).map((r) => r.id)];
+
+  // Payments go with their terms; a combined bill left with one payment is unlinked.
+  const batchIds = (
+    await prisma.payment.findMany({ where: { termId: { in: ids }, batchId: { not: null } }, select: { batchId: true } })
+  ).map((p) => p.batchId!);
+  await prisma.term.deleteMany({ where: { id: { in: ids } } });
+  for (const b of new Set(batchIds)) {
+    if (await prisma.paymentBatch.findUnique({ where: { id: b }, select: { id: true } })) await cleanupBatch(b);
+  }
+
+  for (const r of riderTerms) revalidatePath(`/bills/${r.itemId}`);
   revalidatePath(`/bills/${t.itemId}`);
   revalidatePath("/bills");
-  return { ok: true, id: t.itemId };
+  return {
+    ok: true,
+    id: t.itemId,
+    warning: kept.length
+      ? `Kept ${kept.map((r) => r.item.name).join(", ")}'s term: it's the rider's only term. Delete the rider instead if it has ended.`
+      : undefined,
+  };
 }
 
 // ---------- payments ----------
@@ -178,13 +227,28 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
   // Combined bill: only bills of this user with the same group + vendor are accepted.
   const self = await prisma.item.findUniqueOrThrow({ where: { id: t.itemId }, select: { categoryGroup: true, vendor: true } });
   const picked = fd.getAll("combinedWith").filter((v): v is string => typeof v === "string" && v !== "");
-  const partners = picked.length
+  const picks = picked.length
     ? await prisma.item.findMany({
         where: { id: { in: picked, not: t.itemId }, userId, categoryGroup: self.categoryGroup, vendor: self.vendor },
         select: { id: true, name: true },
       })
     : [];
+  // A combined partner brings its riders along (riders aren't offered as checkboxes).
+  const partners = [
+    ...picks,
+    ...(picks.length
+      ? await prisma.item.findMany({ where: { userId, parentId: { in: picks.map((x) => x.id) } }, select: { id: true, name: true } })
+      : []),
+  ];
   const combinedTotal = decimal(fd, "combinedTotal");
+
+  // This bill's own riders are edited on the same form: rider_<id> = amount, riderPayment_<id> = existing payment.
+  const riders = await prisma.item.findMany({ where: { userId, parentId: t.itemId }, select: { id: true } });
+  const riderInput = riders.map((r) => ({
+    itemId: r.id,
+    amountHkd: decimal(fd, `rider_${r.id}`),
+    paymentId: optStr(fd, `riderPayment_${r.id}`),
+  }));
 
   let id = paymentId;
   if (paymentId) {
@@ -195,52 +259,152 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
     id = (await prisma.payment.create({ data: { ...data, termId } })).id;
   }
 
-  const missing = await linkBatch(id!, paidAt, partners, combinedTotal);
+  const termStart = (await prisma.term.findUniqueOrThrow({ where: { id: termId }, select: { startDate: true } })).startDate;
+  const riderPaymentIds = await saveRiderPayments(riderInput, data, termStart);
+
+  const unpriced = await linkBatch(id!, data, partners, combinedTotal, riderPaymentIds);
+  for (const r of riders) revalidatePath(`/bills/${r.id}`);
 
   revalidatePath(`/bills/${t.itemId}`);
+  for (const it of partners) revalidatePath(`/bills/${it.id}`);
   revalidatePath("/bills");
   return {
     ok: true,
     id: t.itemId,
-    warning: missing.length
-      ? `No payment on the same date found for: ${missing.join(", ")}. Log it there and pick this bill to link it.`
+    warning: unpriced.length
+      ? `Payment added to ${unpriced.join(", ")} with amount HK$0 — couldn't work out its share. Open it and enter the amount.`
       : undefined,
   };
 }
 
+/** The term a linked payment belongs on: same start date as the main payment's term, else the latest. */
+async function pickTerm(itemId: string, startDate: Date) {
+  const terms = await prisma.term.findMany({
+    where: { itemId },
+    orderBy: { startDate: "desc" },
+    select: { id: true, startDate: true, amount: true, currency: true, amountHkd: true, payments: { select: { amountHkd: true } } },
+  });
+  return terms.find((x) => x.startDate.getTime() === startDate.getTime()) ?? terms[0] ?? null;
+}
+
 /**
- * Links a payment to the same-date payments of the partner bills (both ways),
- * so opening any of them shows the same combined bill. Returns partner names
- * that have no payment on that date yet.
+ * Saves the riders' payments entered alongside the main bill's payment, with the
+ * same date, card, channel and note. A blank amount means no rider payment:
+ * an existing one is removed. Returns the rider payment ids that remain.
+ */
+async function saveRiderPayments(
+  input: { itemId: string; amountHkd: Prisma.Decimal | null; paymentId: string | null }[],
+  fill: Omit<PaymentFill, "amountHkd">,
+  termStart: Date
+): Promise<string[]> {
+  const ids: string[] = [];
+  for (const r of input) {
+    const existing = r.paymentId
+      ? await prisma.payment.findFirst({ where: { id: r.paymentId, term: { itemId: r.itemId } }, select: { id: true, batchId: true } })
+      : null;
+    if (r.amountHkd === null) {
+      if (existing) {
+        await prisma.payment.delete({ where: { id: existing.id } });
+        if (existing.batchId) await cleanupBatch(existing.batchId);
+      }
+      continue;
+    }
+    const data = { ...fill, amountHkd: r.amountHkd };
+    if (existing) {
+      await prisma.payment.update({ where: { id: existing.id }, data });
+      ids.push(existing.id);
+    } else {
+      const term = await pickTerm(r.itemId, termStart);
+      if (!term) continue;
+      ids.push((await prisma.payment.create({ data: { ...data, termId: term.id }, select: { id: true } })).id);
+    }
+  }
+  return ids;
+}
+
+type PaymentFill = {
+  paidAt: Date;
+  amountHkd: Prisma.Decimal;
+  paymentMethodId: string | null;
+  channel: (typeof CHANNELS)[number]["value"] | null;
+  note: string | null;
+};
+
+/**
+ * Links a payment with the partner bills' payments on the same date (both ways),
+ * so opening any of them shows the same combined bill. A partner with no payment
+ * on that date gets one created with the same date, card, channel and note, and
+ * its own share as the amount. Returns names whose share couldn't be worked out.
  */
 async function linkBatch(
   paymentId: string,
-  paidAt: Date,
+  fill: PaymentFill,
   partners: { id: string; name: string }[],
-  totalHkd: Prisma.Decimal | null
+  totalHkd: Prisma.Decimal | null,
+  riderPaymentIds: string[] = [] // this bill's own rider payments: follow the main payment
 ): Promise<string[]> {
   const current = await prisma.payment.findUniqueOrThrow({
     where: { id: paymentId },
-    select: { batchId: true, term: { select: { itemId: true } } },
+    select: { batchId: true, term: { select: { startDate: true } } },
   });
 
   if (partners.length === 0) {
     if (current.batchId) {
-      await prisma.payment.update({ where: { id: paymentId }, data: { batchId: null } });
+      await prisma.payment.updateMany({ where: { id: { in: [paymentId, ...riderPaymentIds] } }, data: { batchId: null } });
       await cleanupBatch(current.batchId);
     }
     return [];
   }
 
   const found: { id: string; batchId: string | null }[] = [];
-  const missing: string[] = [];
+  const toCreate: { itemId: string; name: string; termId: string; share: number | null }[] = [];
   for (const it of partners) {
     const p = await prisma.payment.findFirst({
-      where: { paidAt, term: { itemId: it.id } },
+      where: { paidAt: fill.paidAt, term: { itemId: it.id } },
       select: { id: true, batchId: true },
     });
-    if (p) found.push(p);
-    else missing.push(it.name);
+    if (p) {
+      found.push(p);
+      continue;
+    }
+    // Same policy year as the payment being saved if there is one, else the latest term.
+    const term = await pickTerm(it.id, current.term.startDate);
+    if (!term) continue; // a bill always has a term; nothing to attach to otherwise
+    const price = term.amountHkd ? Number(term.amountHkd) : term.currency === "HKD" ? Number(term.amount) : null;
+    const paid = term.payments.reduce((sum, x) => sum + Number(x.amountHkd), 0);
+    toCreate.push({ itemId: it.id, name: it.name, termId: term.id, share: price === null ? null : Math.max(0, price - paid) });
+  }
+
+  // If exactly one share is unknown, it's whatever the combined total leaves over.
+  const unknown = toCreate.filter((c) => c.share === null);
+  if (unknown.length === 1 && totalHkd) {
+    const others = await prisma.payment.findMany({
+      where: { id: { in: [...found.map((f) => f.id), ...riderPaymentIds] } },
+      select: { amountHkd: true },
+    });
+    const known =
+      Number(fill.amountHkd) +
+      others.reduce((sum, x) => sum + Number(x.amountHkd), 0) +
+      toCreate.reduce((sum, c) => sum + (c.share ?? 0), 0);
+    const rest = Number(totalHkd) - known;
+    if (rest >= 0) unknown[0].share = rest;
+  }
+
+  const unpriced: string[] = [];
+  for (const c of toCreate) {
+    if (c.share === null) unpriced.push(c.name);
+    const created = await prisma.payment.create({
+      data: {
+        termId: c.termId,
+        paidAt: fill.paidAt,
+        amountHkd: new Prisma.Decimal((c.share ?? 0).toFixed(2)),
+        paymentMethodId: fill.paymentMethodId,
+        channel: fill.channel,
+        note: fill.note,
+      },
+      select: { id: true },
+    });
+    found.push({ id: created.id, batchId: null });
   }
 
   const batchId =
@@ -249,7 +413,7 @@ async function linkBatch(
     (await prisma.paymentBatch.create({ data: { totalHkd }, select: { id: true } })).id;
   await prisma.paymentBatch.update({ where: { id: batchId }, data: { totalHkd } });
 
-  const keep = [paymentId, ...found.map((p) => p.id)];
+  const keep = [paymentId, ...riderPaymentIds, ...found.map((p) => p.id)];
   // Unticked bills leave the batch.
   await prisma.payment.updateMany({ where: { batchId, id: { notIn: keep } }, data: { batchId: null } });
   await prisma.payment.updateMany({ where: { id: { in: keep } }, data: { batchId } });
@@ -258,7 +422,7 @@ async function linkBatch(
   const oldBatches = new Set(found.map((p) => p.batchId).filter((b): b is string => !!b && b !== batchId));
   for (const b of oldBatches) await cleanupBatch(b);
   await cleanupBatch(batchId);
-  return missing;
+  return unpriced;
 }
 
 /** A batch with fewer than two payments isn't a combined bill any more. */
@@ -273,11 +437,16 @@ export async function deletePayment(paymentId: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const p = await prisma.payment.findFirst({
     where: { id: paymentId, term: { item: { userId } } },
-    select: { id: true, batchId: true, term: { select: { itemId: true } } },
+    select: { id: true, paidAt: true, batchId: true, term: { select: { itemId: true } } },
   });
   if (!p) return fail("Payment not found.");
-  await prisma.payment.delete({ where: { id: paymentId } });
-  if (p.batchId) await cleanupBatch(p.batchId);
+  // Rider payments on the same date are edited together with this one, so they go too.
+  const riderPayments = await prisma.payment.findMany({
+    where: { paidAt: p.paidAt, term: { item: { userId, parentId: p.term.itemId } } },
+    select: { id: true, batchId: true },
+  });
+  await prisma.payment.deleteMany({ where: { id: { in: [paymentId, ...riderPayments.map((r) => r.id)] } } });
+  for (const b of new Set([p.batchId, ...riderPayments.map((r) => r.batchId)])) if (b) await cleanupBatch(b);
   revalidatePath(`/bills/${p.term.itemId}`);
   return { ok: true, id: p.term.itemId };
 }

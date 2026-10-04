@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
 import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName, type LeadUnitName } from "@/lib/billing";
-import { loadRates, toHkd } from "@/lib/fx";
+import { toHkd } from "@/lib/fx";
 import { BackBar, Card, Pill, SectionLabel, btnPrimary } from "@/components/ui";
 import ReminderEditor from "@/components/ReminderEditor";
 import ItemStatusActions from "@/components/ItemStatusActions";
@@ -38,11 +38,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     .reduce<(typeof item.terms)[number]["payments"][number] | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
   const nd = nextDate(type, item.status === "ACTIVE", item.terms, today);
 
-  const rates = await loadRates(latest ? [latest.currency] : []);
   const head = latest
     ? (() => {
         const amt = Number(latest.amount);
-        const { hkd, approx } = toHkd(amt, latest.currency, latest.amountHkd ? Number(latest.amountHkd) : null, rates);
+        const { hkd, approx } = toHkd(amt, latest.currency, latest.amountHkd ? Number(latest.amountHkd) : null);
         return latest.currency === "HKD" || hkd === null
           ? { main: money(amt, latest.currency), original: null }
           : { main: `${approx ? "≈" : ""}${money(hkd)}`, original: `(${money(amt, latest.currency)})` };

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { fmtDay, isoDay, todayHK } from "@/lib/dates";
-import { getCombineCandidates, getMethods } from "@/lib/lookups";
+import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
 import { money } from "@/lib/billing";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
@@ -15,7 +15,11 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
     include: { item: { select: { name: true, paymentMethodId: true } }, payments: { select: { amountHkd: true } } },
   });
   if (!term) notFound();
-  const [methods, candidates] = await Promise.all([getMethods(userId), getCombineCandidates(userId, id)]);
+  const [methods, candidates, riders] = await Promise.all([
+    getMethods(userId),
+    getCombineCandidates(userId, id),
+    getRiderRows(userId, id, term.startDate, null),
+  ]);
 
   // Prefill with what's left to pay on this term, in HKD where known.
   const fullHkd = term.amountHkd ? Number(term.amountHkd) : term.currency === "HKD" ? Number(term.amount) : null;
@@ -45,6 +49,8 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
         }}
         methods={methods}
         candidates={candidates}
+        itemName={term.item.name}
+        riders={riders}
       />
     </>
   );

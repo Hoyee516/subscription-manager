@@ -243,12 +243,3 @@ model Alert {
 
   @@index([userId, dismissedAt])
 }
-
-model FxRate {
-  date  DateTime @db.Date
-  base  String
-  quote String
-  rate  Decimal  @db.Decimal(18, 8)
-
-  @@id([date, base, quote])
-}
