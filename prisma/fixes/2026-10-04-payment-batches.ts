@@ -1,9 +1,11 @@
+// @ts-nocheck
 // Converts the old free-text "Combined bill" (Payment.batchRef) into linked
 // payment batches with a combined total, e.g.
 //   "Prudential Apr 2026 bill, total HK$19,745.03" → one PaymentBatch, totalHkd 19745.03
 // Run once, after `npx prisma db push`:  npx tsx prisma/fixes/2026-10-04-payment-batches.ts
 // Safe to re-run: payments already linked to a batch are skipped.
-// HISTORICAL: already run on 4 Oct 2026; Payment.batchRef has since been dropped, so this no longer compiles against the current schema.
+// HISTORICAL: already run on 4 Oct 2026. Payment.batchRef has since been dropped, so type-checking is
+// switched off below to keep `next build` (which checks every .ts file) passing.
 import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
