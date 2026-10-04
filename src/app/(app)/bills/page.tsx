@@ -63,7 +63,12 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
 
   const rows = items
     .filter((i) => {
-      const active = i.status === "ACTIVE";
+      // A trial, one-off or prepaid bill whose last term has ended counts as ended,
+      // even if its status was never changed.
+      const last = i.terms[i.terms.length - 1];
+      const lapsed =
+        ["TRIAL", "PASS", "PREPAID"].includes(i.type) && !!last?.endDate && last.endDate < today;
+      const active = i.status === "ACTIVE" && !lapsed;
       const tp = i.type === "TRIAL" || i.type === "PASS";
       switch (filter) {
         case "ended":
@@ -75,9 +80,9 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         case "telecom":
           return active && i.categoryGroup === "Telecom";
         case "software":
-          return active && !tp && !["Insurance", "Telecom"].includes(i.categoryGroup);
+          return active && !["Insurance", "Telecom"].includes(i.categoryGroup);
         default:
-          return active && !tp;
+          return active;
       }
     })
     .map((i) => {
