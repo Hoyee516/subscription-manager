@@ -31,10 +31,10 @@ type TermLike = { amount: { toString(): string }; currency: string; amountHkd: {
 
 type PaymentLike = { paidAt: Date; channel: string | null; batchId: string | null };
 
-/** Most recent payment across all terms decides the "In person" and "Combined bill" badges. */
+/** Most recent payment across all terms decides the "In person", "Bill payment" and "Combined bill" badges. */
 function lastPaymentBadges(payments: PaymentLike[]) {
   const last = payments.reduce<PaymentLike | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
-  return { inPerson: last?.channel === "IN_PERSON", combined: !!last?.batchId };
+  return { inPerson: last?.channel === "IN_PERSON", billPayment: last?.channel === "BILL_PAYMENT", combined: !!last?.batchId };
 }
 
 export default async function BillsPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
@@ -183,6 +183,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
                           {r.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
                           {r.status === "ACTIVE" && (r.card ? <Pill>{r.card}</Pill> : <Pill tone="orange">No card set</Pill>)}
                           {r.inPerson && <Pill tone="yellow">In person</Pill>}
+                          {r.billPayment && <Pill tone="blue">Bill payment</Pill>}
                           {r.combined && <Pill tone="pink">Combined bill</Pill>}
                         </div>
                         {r.riders.map((rd) => (

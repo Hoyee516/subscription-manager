@@ -49,7 +49,6 @@ enum PaymentMethodType {
 enum PayChannel {
   CARD_ONLINE
   IN_PERSON
-  FPS
   AUTOPAY
   BILL_PAYMENT
   OTHER

@@ -32,7 +32,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const today = todayHK();
   const type = item.type as ItemTypeName;
   const latest = item.terms[item.terms.length - 1];
-  // Most recent payment across all terms decides the "In person" and "Combined bill" badges.
+  // Most recent payment across all terms decides the "In person", "Bill payment" and "Combined bill" badges.
   const lastPayment = item.terms
     .flatMap((t) => t.payments)
     .reduce<(typeof item.terms)[number]["payments"][number] | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
@@ -143,6 +143,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
               <Pill tone="yellow">In person</Pill>
             </>
           )}
+          {lastPayment?.channel === "BILL_PAYMENT" && (
+            <>
+              {" "}
+              <Pill tone="blue">Bill payment</Pill>
+            </>
+          )}
           {lastPayment?.batchId && (
             <>
               {" "}
@@ -219,6 +225,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                           <>
                             {" "}
                             <Pill tone="yellow">In person</Pill>
+                          </>
+                        )}
+                        {p.channel === "BILL_PAYMENT" && (
+                          <>
+                            {" "}
+                            <Pill tone="blue">Bill payment</Pill>
                           </>
                         )}
                         {p.batchId && (
