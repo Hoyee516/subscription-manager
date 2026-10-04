@@ -27,6 +27,8 @@ export type Occurrence = {
   amount: number | null; // HKD; null = no charge (e.g. a trial ending)
   estimate: boolean;
   paid: boolean;
+  logged: boolean; // matched to a logged payment (vs. counted as paid because it's auto-charged)
+  autoCharge: boolean;
   kind: "charge" | "ends";
   category: Category;
 };
@@ -163,6 +165,7 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
     };
     const push = (date: Date, amount: number | null, estimate: boolean, kind: Occurrence["kind"], note?: string, early = 45) => {
       if (date < from || date > to) return;
+      const logged = kind === "charge" && paidNear(date, early);
       out.push({
         key: `${i.id}-${date.toISOString()}-${kind}`,
         date,
@@ -172,7 +175,9 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
         amount,
         estimate,
         // Auto-charged bills: a charge that has fallen due counts as paid without a logged payment.
-        paid: kind === "charge" && (paidNear(date, early) || (i.autoCharge && !estimate && date <= today)),
+        paid: logged || (kind === "charge" && i.autoCharge && !estimate && date <= today),
+        logged,
+        autoCharge: i.autoCharge,
         kind,
         category: cat,
       });
@@ -233,6 +238,8 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
         amount: Number(b.amount),
         estimate: false,
         paid: !!b.paidAt,
+        logged: !!b.paidAt,
+        autoCharge: false,
         kind: "charge",
         category: "utility",
       });
@@ -254,6 +261,8 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
         amount: Number(ref.amount),
         estimate: true,
         paid: false,
+        logged: false,
+        autoCharge: false,
         kind: "charge",
         category: "utility",
       });

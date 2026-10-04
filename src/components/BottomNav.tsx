@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, List, Zap, CreditCard } from "lucide-react";
+import { Home, CalendarDays, List, Zap, CreditCard, BarChart3 } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Home", Icon: Home },
@@ -9,21 +9,22 @@ const TABS = [
   { href: "/bills", label: "Bills", Icon: List },
   { href: "/utilities", label: "Utilities", Icon: Zap },
   { href: "/cards", label: "Cards", Icon: CreditCard },
+  { href: "/stats", label: "Statistics", Icon: BarChart3 },
 ];
 
 export default function BottomNav() {
   const path = usePathname();
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-white pb-[max(calc(env(safe-area-inset-bottom)-8px),12px)]">
-      <ul className="mx-auto flex max-w-md justify-around px-1 pt-1.5 pb-0">
+      <ul className="mx-auto flex max-w-md px-1 pt-1.5 pb-0">
         {TABS.map(({ href, label, Icon }) => {
           const on = href === "/" ? path === "/" : path.startsWith(href);
           return (
-            <li key={href}>
+            <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
                 aria-current={on ? "page" : undefined}
-                className={`flex min-h-12 min-w-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${
+                className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-[10.5px] font-semibold ${
                   on ? "text-brand" : "text-[#6B7480]"
                 }`}
               >
