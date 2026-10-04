@@ -13,13 +13,14 @@ const ym = (d: Date) => d.toISOString().slice(0, 7);
 const r0 = (n: number) => Math.round(n);
 const amountText = (o: Occurrence) => (o.amount != null ? `${o.estimate ? "≈" : ""}${money(r0(o.amount))}` : "");
 
-export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string; d?: string; v?: string }> }) {
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string; d?: string; v?: string; u?: string }> }) {
   const userId = await requireUserId();
-  const { m, d, v } = await searchParams;
+  const { m, d, v, u } = await searchParams;
   const today = todayHK();
   const month = /^\d{4}-\d{2}$/.test(m ?? "") ? new Date(`${m}-01T00:00:00Z`) : new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   const monthEnd = addDays(addMonths(month, 1), -1);
   const list = v === "list";
+  const unpaidOnly = list && u === "1"; // "x bills to go" link: list just the charges not yet paid
 
   const data = await loadData(userId);
   const occ = occurrences(data, month, monthEnd, today);
@@ -29,8 +30,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const toGo = charges.filter((o) => !o.paid).length;
   const avg = summary(data, today).mrc;
 
+  const shown = unpaidOnly ? occ.filter((o) => o.kind === "charge" && !o.paid) : occ;
   const byDay = new Map<number, Occurrence[]>();
-  for (const o of occ) byDay.set(o.date.getUTCDate(), [...(byDay.get(o.date.getUTCDate()) ?? []), o]);
+  for (const o of shown) byDay.set(o.date.getUTCDate(), [...(byDay.get(o.date.getUTCDate()) ?? []), o]);
 
   const isThisMonth = ym(month) === ym(today);
   const sel = Number(d) >= 1 && Number(d) <= monthEnd.getUTCDate() ? Number(d) : isThisMonth ? today.getUTCDate() : (byDay.keys().next().value ?? 1);
@@ -39,7 +41,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: monthEnd.getUTCDate() }, (_, i) => i + 1)];
   while (cells.length % 7) cells.push(null);
   const q = (p: Record<string, string | number | undefined>) =>
-    "/calendar?" + Object.entries({ m: ym(month), v: list ? "list" : undefined, ...p }).filter(([, x]) => x !== undefined).map(([k, x]) => `${k}=${x}`).join("&");
+    "/calendar?" + Object.entries({ m: ym(month), v: list ? "list" : undefined, u: unpaidOnly ? 1 : undefined, ...p }).filter(([, x]) => x !== undefined).map(([k, x]) => `${k}=${x}`).join("&");
 
   const Row = ({ o }: { o: Occurrence }) => (
     <li className="border-t border-[#EEEFEA] first:border-t-0">
@@ -68,8 +70,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           ].map(([label, isList]) => (
             <Link
               key={String(label)}
-              href={isList ? q({ v: "list", d: undefined }) : q({ v: undefined })}
-              className={`flex min-h-9 items-center rounded-lg px-3.5 text-[13px] font-bold ${list === isList ? "bg-white text-ink" : "text-muted"}`}
+              href={isList ? q({ v: "list", d: undefined, u: undefined }) : q({ v: undefined, u: undefined })}
+              className={`flex min-h-9 items-center rounded-lg px-3.5 text-[13px] font-bold ${list === isList && !unpaidOnly ? "bg-white text-ink" : "text-muted"}`}
             >
               {label}
             </Link>
@@ -88,7 +90,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           </div>
           <div className="flex justify-between text-xs text-muted">
             <span>
-              Paid {money(r0(paid))} · {toGo} {toGo === 1 ? "bill" : "bills"} to go
+              Paid {money(r0(paid))} ·{" "}
+              {toGo > 0 ? (
+                <Link href={q({ v: "list", u: 1, d: undefined })} className="font-bold text-brand underline">
+                  {toGo} {toGo === 1 ? "bill" : "bills"} to go
+                </Link>
+              ) : (
+                "all paid"
+              )}
             </span>
             <span>avg month {money(r0(avg))}</span>
           </div>
@@ -96,20 +105,30 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
         <Card className="flex flex-col gap-1.5">
           <div className="mb-1 flex items-center justify-between">
-            <Link href={`/calendar?m=${ym(addMonths(month, -1))}${list ? "&v=list" : ""}`} aria-label="Previous month" className="flex h-11 w-11 items-center justify-center rounded-xl border border-line">
+            <Link href={`/calendar?m=${ym(addMonths(month, -1))}${list ? "&v=list" : ""}${unpaidOnly ? "&u=1" : ""}`} aria-label="Previous month" className="flex h-11 w-11 items-center justify-center rounded-xl border border-line">
               <ChevronLeft size={20} />
             </Link>
             <span className="text-base font-bold">
               {MONTHS[month.getUTCMonth()]} {month.getUTCFullYear()}
             </span>
-            <Link href={`/calendar?m=${ym(addMonths(month, 1))}${list ? "&v=list" : ""}`} aria-label="Next month" className="flex h-11 w-11 items-center justify-center rounded-xl border border-line">
+            <Link href={`/calendar?m=${ym(addMonths(month, 1))}${list ? "&v=list" : ""}${unpaidOnly ? "&u=1" : ""}`} aria-label="Next month" className="flex h-11 w-11 items-center justify-center rounded-xl border border-line">
               <ChevronRight size={20} />
             </Link>
           </div>
 
+          {list && unpaidOnly && (
+            <div className="flex items-center justify-between rounded-lg bg-[#F6F6F3] px-3 py-2 text-[13px]">
+              <span className="font-bold">
+                Not paid yet · {shown.length} {shown.length === 1 ? "bill" : "bills"}
+              </span>
+              <Link href={q({ u: undefined })} className="font-bold text-brand">
+                Show all
+              </Link>
+            </div>
+          )}
           {list ? (
-            occ.length === 0 ? (
-              <p className="py-3 text-sm text-muted">Nothing due this month.</p>
+            shown.length === 0 ? (
+              <p className="py-3 text-sm text-muted">{unpaidOnly ? "Everything this month is paid." : "Nothing due this month."}</p>
             ) : (
               <ul>
                 {[...byDay.entries()].map(([day, os]) => (
