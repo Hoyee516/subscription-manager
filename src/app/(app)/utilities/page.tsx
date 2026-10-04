@@ -5,15 +5,16 @@ import { requireUserId } from "@/lib/session";
 import { addMonths, fmtDay, fmtMonth, todayHK } from "@/lib/dates";
 import { money, type LeadUnitName } from "@/lib/billing";
 import PageHeader from "@/components/PageHeader";
+import UtilityChart from "@/components/UtilityChart";
 import ReminderEditor from "@/components/ReminderEditor";
 import { Card, Pill, SectionLabel } from "@/components/ui";
 
 const ym = (d: Date) => d.toISOString().slice(0, 7); // "2026-10"
 const cycleText = (m: number) => (m === 1 ? "monthly" : m === 3 ? "quarterly" : `every ${m} months`);
 
-export default async function UtilitiesPage({ searchParams }: { searchParams: Promise<{ u?: string; all?: string }> }) {
+export default async function UtilitiesPage({ searchParams }: { searchParams: Promise<{ u?: string }> }) {
   const userId = await requireUserId();
-  const { u, all } = await searchParams;
+  const { u } = await searchParams;
   const today = todayHK();
   const thisMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   const yearAgo = addMonths(thisMonth, -12);
@@ -54,8 +55,12 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
     x.bills.filter((b) => !b.paidAt && b.dueDate).map((b) => ({ name: x.name, b }))
   );
 
-  const byMonth = new Map(sel.bills.map((b) => [ym(b.periodStart), Number(b.amount)]));
-  const shown = all ? sel.bills : sel.bills.slice(0, 12);
+  const points = sel.bills.map((b) => ({
+    id: b.id,
+    month: ym(b.periodStart),
+    amount: Number(b.amount),
+    unpaid: !b.paidAt && !!b.dueDate,
+  }));
 
   return (
     <>
@@ -130,47 +135,7 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
               <Plus size={16} strokeWidth={2.4} /> Add
             </Link>
           </div>
-          <ul>
-            {shown.map((b) => {
-              const amt = Number(b.amount);
-              const prev = byMonth.get(ym(addMonths(b.periodStart, -12)));
-              const yoy = prev !== undefined && prev > 0 ? (amt / prev - 1) * 100 : null;
-              const status = b.paidAt
-                ? `Paid ${fmtDay(b.paidAt)}${b.paymentMethod ? ` · ${b.paymentMethod.label}` : ""}`
-                : b.dueDate
-                  ? `Due ${fmtDay(b.dueDate)}`
-                  : prev !== undefined
-                    ? `vs ${money(prev)} a year earlier`
-                    : "";
-              return (
-                <li key={b.id} className="border-t border-[#EEEFEA] first:border-t-0">
-                  <Link href={`/utilities/bills/${b.id}`} className="flex items-center gap-3 py-2.5">
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold">{fmtMonth(b.periodStart)}</span>
-                      <span className="text-xs text-muted">
-                        {status}
-                        {b.credit ? ` · credit ${money(Math.abs(Number(b.credit)))}` : ""}
-                      </span>
-                    </span>
-                    {yoy !== null &&
-                      (Math.abs(yoy) < 0.05 ? (
-                        <Pill tone="teal">▬ 0%</Pill>
-                      ) : (
-                        <Pill tone={yoy >= 10 ? "orange" : yoy <= -10 ? "teal" : "grey"}>
-                          {yoy > 0 ? "▲" : "▼"} {Math.abs(yoy).toFixed(1)}%
-                        </Pill>
-                      ))}
-                    <span className="w-20 text-right text-sm font-bold">{money(amt)}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {!all && sel.bills.length > 12 && (
-            <Link href={`/utilities?u=${sel.id}&all=1`} className="pt-1 text-[13px] font-bold text-brand">
-              Show all {sel.bills.length} bills
-            </Link>
-          )}
+          <UtilityChart key={sel.id} bills={points} thisYear={today.getUTCFullYear()} />
         </Card>
 
         <Card className="flex flex-col gap-3">
