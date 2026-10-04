@@ -20,6 +20,7 @@ import { Pill, groupTone } from "@/components/ui";
 
 const FILTERS = [
   { key: "all", label: "All" },
+  { key: "home", label: "Home" },
   { key: "insurance", label: "Insurance" },
   { key: "telecom", label: "Telecom" },
   { key: "software", label: "Software & more" },
@@ -83,12 +84,14 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
           return !active;
         case "trials":
           return tp;
+        case "home":
+          return active && i.categoryGroup === "Home";
         case "insurance":
           return active && i.categoryGroup === "Insurance";
         case "telecom":
           return active && i.categoryGroup === "Telecom";
         case "software":
-          return active && !["Insurance", "Telecom"].includes(i.categoryGroup);
+          return active && !["Home", "Insurance", "Telecom"].includes(i.categoryGroup);
         default:
           return active;
       }
@@ -121,7 +124,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
 
   const groups = Map.groupBy(rows, (r) => r.groupKey);
   // Fixed order; any other group (e.g. Creator Tools) follows alphabetically.
-  const ORDER = ["Insurance", "Insurance · savings-type", "Telecom", "Memberships", "Software"];
+  const ORDER = ["Home", "Insurance", "Insurance · savings-type", "Telecom", "Memberships", "Software"];
   const rank = (k: string) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
   const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 
