@@ -179,7 +179,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 })}
               </div>
               <div className="flex flex-wrap gap-x-3.5 gap-y-1 pt-1.5 text-xs text-muted">
-                {(["subs", "insurance", "home", "utility", "savings"] as Category[]).map((c) => (
+                {(["subs", "insurance", "home", "tax", "utility", "savings"] as Category[]).map((c) => (
                   <span key={c} className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY[c].color }} />
                     {CATEGORY[c].label}

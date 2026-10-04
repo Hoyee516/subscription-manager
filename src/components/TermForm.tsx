@@ -6,6 +6,8 @@ import { useAction } from "./useAction";
 import { Card, SectionLabel, btnPrimary, inputCls, labelCls } from "./ui";
 
 /** A rider's term for the same policy year: shares dates and cycle with the main term. */
+export type InstalmentRow = { dueDate: string; amountHkd: string };
+
 export type RiderTermRow = { itemId: string; name: string; termId: string; amount: string; currency: string; amountHkd: string };
 
 export default function TermForm({
@@ -13,11 +15,13 @@ export default function TermForm({
   termId,
   d,
   riders = [],
+  instalments,
 }: {
   itemId: string;
   termId: string | null;
   d: TermDefaults;
   riders?: RiderTermRow[];
+  instalments?: InstalmentRow[]; // shown only for bills that use instalments (or have them)
 }) {
   const { pending, run } = useAction();
   return (
@@ -32,6 +36,26 @@ export default function TermForm({
       <Card className="flex flex-col gap-3.5">
         <TermFields d={d} />
       </Card>
+      {instalments && (
+        <Card className="flex flex-col gap-3">
+          <div>
+            <SectionLabel>Instalments</SectionLabel>
+            <p className="mt-1 text-xs text-muted">For a term paid in parts with set due dates (e.g. tax). Leave blank if paid in one go.</p>
+          </div>
+          {[0, 1, 2].map((n) => (
+            <div key={n} className="grid grid-cols-2 gap-2.5">
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className={labelCls}>Instalment {n + 1} due</span>
+                <input name={`inst_due_${n}`} type="date" defaultValue={instalments[n]?.dueDate ?? ""} className={inputCls} />
+              </label>
+              <label className="flex min-w-0 flex-col gap-1">
+                <span className={labelCls}>Amount (HKD)</span>
+                <input name={`inst_amt_${n}`} inputMode="decimal" defaultValue={instalments[n]?.amountHkd ?? ""} className={inputCls} />
+              </label>
+            </div>
+          ))}
+        </Card>
+      )}
       {riders.length > 0 && (
         <Card className="flex flex-col gap-3">
           <div>

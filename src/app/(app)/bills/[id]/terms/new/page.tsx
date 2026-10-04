@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import { addDays, isoDay } from "@/lib/dates";
+import { addDays, addMonths, isoDay } from "@/lib/dates";
 import { getRiderTermRows, termToDefaults } from "@/lib/lookups";
 import { nextInstalment, stepCycle, type CycleUnitName } from "@/lib/billing";
 import TermForm from "@/components/TermForm";
@@ -20,12 +20,21 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
       terms: {
         orderBy: { startDate: "desc" },
         take: 1,
-        include: { payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true } } },
+        include: {
+          payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true } },
+          instalments: { orderBy: { dueDate: "asc" } },
+        },
       },
     },
   });
   if (!item) notFound();
   const riders = await getRiderTermRows(userId, id, null);
+  // Instalments: same due dates a year later, amounts left for the new bill.
+  const lastInst = item.terms[0]?.instalments ?? [];
+  const instalments =
+    lastInst.length || item.categoryGroup === "Tax"
+      ? lastInst.map((x) => ({ dueDate: isoDay(addMonths(x.dueDate, 12)), amountHkd: "" }))
+      : undefined;
 
   const last = item.terms[0];
   let d = emptyTerm;
@@ -58,7 +67,7 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
         {item.name}
         {riders.length > 0 && ` + rider ${riders.map((r) => r.name).join(", ")}`} · prefilled from the last term — change the price if it went up
       </p>
-      <TermForm itemId={id} termId={null} d={d} riders={riders} />
+      <TermForm itemId={id} termId={null} d={d} riders={riders} instalments={instalments} />
     </>
   );
 }

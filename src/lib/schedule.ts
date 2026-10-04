@@ -5,13 +5,14 @@ import { addDays, addMonths, daysBetween } from "./dates";
 import { stepCycle, type CycleUnitName, type ItemTypeName } from "./billing";
 import { toHkd } from "./fx";
 
-export type Category = "insurance" | "home" | "subs" | "utility" | "savings";
+export type Category = "insurance" | "home" | "tax" | "subs" | "utility" | "savings";
 
 // Calendar dot colours: a set checked to stay apart for normal and colour-blind vision
 // (the legend and the day list name each category, so colour is never the only cue).
 export const CATEGORY: Record<Category, { label: string; color: string }> = {
   insurance: { label: "Insurance", color: "#E34948" },
   home: { label: "Home", color: "#EDA100" },
+  tax: { label: "Tax", color: "#7A5A00" },
   subs: { label: "Subs & telecom", color: "#1BAF7A" },
   utility: { label: "Utilities", color: "#2A78D6" },
   savings: { label: "Savings-type", color: "#4A3AA7" },
@@ -71,6 +72,7 @@ export function categoryOf(i: { isSavings: boolean; categoryGroup: string }): Ca
   if (i.isSavings) return "savings";
   if (i.categoryGroup === "Insurance") return "insurance";
   if (i.categoryGroup === "Home") return "home";
+  if (i.categoryGroup === "Tax") return "tax";
   return "subs";
 }
 
@@ -82,7 +84,10 @@ export async function loadData(userId: string) {
       include: {
         paymentMethod: { select: { id: true, label: true } },
         parent: { select: { paymentMethodId: true, paymentMethod: { select: { id: true, label: true } } } },
-        terms: { orderBy: { startDate: "asc" }, include: { payments: { select: { paidAt: true, amountHkd: true } } } },
+        terms: {
+          orderBy: { startDate: "asc" },
+          include: { payments: { select: { paidAt: true, amountHkd: true } }, instalments: { orderBy: { dueDate: "asc" } } },
+        },
       },
     }),
     prisma.utility.findMany({
@@ -124,7 +129,7 @@ export function utilityMonthly(u: Data["utilities"][number], today: Date): numbe
 }
 
 export function summary(data: Data, today: Date) {
-  const by: Record<Category, number> = { insurance: 0, home: 0, subs: 0, utility: 0, savings: 0 };
+  const by: Record<Category, number> = { insurance: 0, home: 0, tax: 0, subs: 0, utility: 0, savings: 0 };
   let active = 0;
   for (const i of data.items) {
     if (isLapsed(i, today)) continue;
@@ -133,7 +138,7 @@ export function summary(data: Data, today: Date) {
   }
   for (const u of data.utilities) by.utility += utilityMonthly(u, today);
   // Savings-type premiums (儲蓄, 年金) are included; the Overview also breaks them out.
-  const mrc = by.insurance + by.home + by.subs + by.utility + by.savings;
+  const mrc = by.insurance + by.home + by.tax + by.subs + by.utility + by.savings;
   return { by, mrc, annual: mrc * 12, active };
 }
 
@@ -186,6 +191,14 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
           push(d, hkd, false, "charge", undefined, unit === "YEAR" ? 45 : 10);
         }
         if (isLast && type === "CONTRACT" && t.endDate) push(t.endDate, null, false, "ends", "Contract ends");
+        return;
+      }
+
+      // Paid in instalments (e.g. salaries tax): one charge per instalment, no renewal estimate.
+      if (t.instalments.length) {
+        t.instalments.forEach((x, n) =>
+          push(x.dueDate, Number(x.amountHkd), false, "charge", `Instalment ${n + 1} of ${t.instalments.length} · ${card}`)
+        );
         return;
       }
 

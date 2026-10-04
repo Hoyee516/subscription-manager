@@ -84,7 +84,7 @@ export default async function HomePage() {
   const savingsTotal = savings.reduce((t, x) => t + x.monthly, 0);
 
   // Biggest share first, in both the bar and its legend.
-  const segs = (["insurance", "home", "subs", "utility", "savings"] as Category[]).filter((c) => s.by[c] > 0).sort((a, b) => s.by[b] - s.by[a]);
+  const segs = (["insurance", "home", "tax", "subs", "utility", "savings"] as Category[]).filter((c) => s.by[c] > 0).sort((a, b) => s.by[b] - s.by[a]);
 
   return (
     <>
@@ -96,16 +96,6 @@ export default async function HomePage() {
             <span className="text-[38px] font-extrabold tracking-tight">{money(r0(s.mrc))}</span>
             <span className="text-sm text-[#B5DDD4]">/ month</span>
           </p>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-xl bg-[#14705F] px-3 py-2.5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#B5DDD4]">Annual burn</p>
-              <p className="mt-1 text-lg font-extrabold">{money(r0(s.annual))}</p>
-            </div>
-            <div className="rounded-xl bg-[#14705F] px-3 py-2.5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#B5DDD4]">Items active</p>
-              <p className="mt-1 text-lg font-extrabold">{s.active}</p>
-            </div>
-          </div>
           <div className="flex flex-col gap-2">
             <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-md">
               {segs.map((c) => (
@@ -149,6 +139,17 @@ export default async function HomePage() {
               </p>
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-xl bg-[#14705F] px-3 py-2.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#B5DDD4]">Annual burn</p>
+              <p className="mt-1 text-lg font-extrabold">{money(r0(s.annual))}</p>
+            </div>
+            <div className="rounded-xl bg-[#14705F] px-3 py-2.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#B5DDD4]">Items active</p>
+              <p className="mt-1 text-lg font-extrabold">{s.active}</p>
+            </div>
+          </div>
         </section>
 
         <Card className="flex flex-col gap-1">
@@ -223,13 +224,15 @@ export default async function HomePage() {
   );
 }
 
-// Lighter tints of each category, readable on the brand-teal card.
+// One distinct hue per category, light enough to read on the brand-teal card
+// (checked: every pair stays apart for normal vision; the legend names each one).
 const SEG: Record<Category, string> = {
-  insurance: "#F7B183",
-  home: "#D4E59F",
-  subs: "#9EE0D2",
-  utility: "#B5CBF2",
-  savings: "#CDBFF0",
+  insurance: "#FF8A65",
+  home: "#FFE066",
+  tax: "#F2F2F2",
+  subs: "#5EE0B5",
+  utility: "#8AB4FF",
+  savings: "#F48FD8",
 };
 
 // Savings-type segments: distinct from the spending colours above.

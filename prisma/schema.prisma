@@ -149,6 +149,7 @@ model Term {
   paymentMethod    PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   notes            String?
   payments         Payment[]
+  instalments      TermInstalment[]
 
   @@index([itemId, startDate])
 }
@@ -169,6 +170,17 @@ model Payment {
   createdAt       DateTime       @default(now())
 
   @@index([batchId])
+}
+
+// A term paid in set parts with their own due dates (e.g. salaries tax: January + April).
+model TermInstalment {
+  id        String   @id @default(uuid())
+  termId    String
+  term      Term     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  dueDate   DateTime @db.Date
+  amountHkd Decimal  @db.Decimal(12, 2)
+
+  @@index([termId])
 }
 
 // One combined bill paid in a single charge (e.g. Prudential policies + rider).

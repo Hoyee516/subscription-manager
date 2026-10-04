@@ -134,6 +134,15 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
   const term = readTermFields(fd);
   if (!term) return fail("Check start date, amount and cycle (end date can't be before start).");
 
+  // Optional instalments (inst_due_N + inst_amt_N): rows with both a date and an amount.
+  const instalments: { dueDate: Date; amountHkd: Prisma.Decimal }[] = [];
+  for (let n = 0; n < 6; n++) {
+    const dueDate = parseDay(fd.get(`inst_due_${n}`));
+    const amountHkd = decimal(fd, `inst_amt_${n}`);
+    if (dueDate && amountHkd !== null) instalments.push({ dueDate, amountHkd });
+  }
+  let savedId = termId;
+
   if (termId) {
     const t = await ownTerm(userId, termId);
     if (!t || t.itemId !== itemId) return fail("Term not found.");
@@ -148,7 +157,11 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
         data: { endDate: dayBefore },
       });
     }
-    await prisma.term.create({ data: { ...term, itemId } });
+    savedId = (await prisma.term.create({ data: { ...term, itemId }, select: { id: true } })).id;
+  }
+  if (fd.has("inst_due_0")) {
+    await prisma.termInstalment.deleteMany({ where: { termId: savedId! } });
+    if (instalments.length) await prisma.termInstalment.createMany({ data: instalments.map((x) => ({ ...x, termId: savedId! })) });
   }
 
   // Riders' terms for the same policy year: dates and cycle come from the main term,

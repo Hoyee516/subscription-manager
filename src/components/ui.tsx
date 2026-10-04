@@ -28,6 +28,7 @@ const PILL = {
   pink: "bg-[#F8E1EC] text-[#8E2457]",
   yellow: "bg-[#FBF0C2] text-[#735A00]",
   olive: "bg-[#E6EFD3] text-[#4A6118]",
+  sand: "bg-[#EFEADC] text-[#5B4A22]",
 } as const;
 
 export type PillTone = keyof typeof PILL;
@@ -37,6 +38,7 @@ export function groupTone(group: string, isSavings = false): PillTone {
   if (isSavings) return "purple";
   const map: Record<string, PillTone> = {
     Home: "olive",
+    Tax: "sand",
     Insurance: "orange",
     Telecom: "blue",
     Software: "teal",

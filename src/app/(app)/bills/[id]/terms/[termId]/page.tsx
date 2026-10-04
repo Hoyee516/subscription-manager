@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { getRiderTermRows, termToDefaults } from "@/lib/lookups";
+import { isoDay } from "@/lib/dates";
 import TermForm from "@/components/TermForm";
 import { BackBar } from "@/components/ui";
 
@@ -10,10 +11,18 @@ export default async function EditTermPage({ params }: { params: Promise<{ id: s
   const { id, termId } = await params;
   const term = await prisma.term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
-    include: { item: { select: { name: true } } },
+    include: {
+      item: { select: { name: true, categoryGroup: true } },
+      instalments: { orderBy: { dueDate: "asc" } },
+    },
   });
   if (!term) notFound();
   const riders = await getRiderTermRows(userId, id, term.startDate);
+  // Instalment rows for tax bills, or any term that already has instalments.
+  const instalments =
+    term.instalments.length || term.item.categoryGroup === "Tax"
+      ? term.instalments.map((x) => ({ dueDate: isoDay(x.dueDate), amountHkd: x.amountHkd.toString() }))
+      : undefined;
 
   return (
     <>
@@ -23,7 +32,7 @@ export default async function EditTermPage({ params }: { params: Promise<{ id: s
         {term.item.name}
         {riders.length > 0 && ` + rider ${riders.map((r) => r.name).join(", ")}`}
       </p>
-      <TermForm itemId={id} termId={termId} d={termToDefaults(term)} riders={riders} />
+      <TermForm itemId={id} termId={termId} d={termToDefaults(term)} riders={riders} instalments={instalments} />
     </>
   );
 }

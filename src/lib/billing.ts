@@ -73,6 +73,7 @@ type TermDates = {
   dueDate: Date | null;
   cycleUnit: CycleUnitName;
   cycleCount: number;
+  instalments?: { dueDate: Date }[];
 };
 
 export type NextDate = { date: Date; label: string; past: boolean } | null;
@@ -81,6 +82,11 @@ export type NextDate = { date: Date; label: string; past: boolean } | null;
 export function nextDate(type: ItemTypeName, active: boolean, terms: TermDates[], today: Date): NextDate {
   const t = terms[terms.length - 1];
   if (!t || !active) return null;
+  // Terms paid in instalments: the next instalment, and nothing once they're all past.
+  if (t.instalments?.length) {
+    const next = t.instalments.map((x) => x.dueDate).filter((d) => d >= today).sort((a, b) => a.getTime() - b.getTime())[0];
+    return next ? { date: next, label: "Instalment due", past: false } : null;
+  }
   const mk = (date: Date, label: string, pastLabel = label): NextDate => {
     const past = date < today;
     return { date, label: past ? pastLabel : label, past };

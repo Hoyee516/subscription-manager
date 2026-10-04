@@ -24,7 +24,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       reminders: { orderBy: { createdAt: "asc" } },
       terms: {
         orderBy: { startDate: "asc" },
-        include: { payments: { orderBy: { paidAt: "asc" }, include: { paymentMethod: { select: { label: true } } } } },
+        include: {
+          payments: { orderBy: { paidAt: "asc" }, include: { paymentMethod: { select: { label: true } } } },
+          instalments: { orderBy: { dueDate: "asc" } },
+        },
       },
     },
   });
@@ -188,6 +191,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                       return line ? <p className="text-xs text-muted">{line}</p> : null;
                     })()}
                     {t.notes && <p className="mt-0.5 text-xs text-muted">{t.notes}</p>}
+                    {t.instalments.map((x, n) => (
+                      <p key={x.id} className="mt-0.5 text-xs text-muted">
+                        Instalment {n + 1}: <span className="font-bold text-ink">{money(Number(x.amountHkd))}</span> · due {fmtDay(x.dueDate)}
+                      </p>
+                    ))}
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold">{money(amt, t.currency)}</p>

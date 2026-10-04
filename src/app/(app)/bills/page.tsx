@@ -21,6 +21,7 @@ import { Pill, groupTone } from "@/components/ui";
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "home", label: "Home" },
+  { key: "tax", label: "Tax" },
   { key: "insurance", label: "Insurance" },
   { key: "telecom", label: "Telecom" },
   { key: "software", label: "Software & more" },
@@ -52,7 +53,10 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
       paymentMethod: { select: { label: true } },
       terms: {
         orderBy: { startDate: "asc" },
-        include: { payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true, channel: true, batchId: true } } },
+        include: {
+          payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true, channel: true, batchId: true } },
+          instalments: { select: { dueDate: true } },
+        },
       },
       riders: { include: { terms: { orderBy: { startDate: "desc" }, take: 1 } } },
     },
@@ -86,12 +90,14 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
           return tp;
         case "home":
           return active && i.categoryGroup === "Home";
+        case "tax":
+          return active && i.categoryGroup === "Tax";
         case "insurance":
           return active && i.categoryGroup === "Insurance";
         case "telecom":
           return active && i.categoryGroup === "Telecom";
         case "software":
-          return active && !["Home", "Insurance", "Telecom"].includes(i.categoryGroup);
+          return active && !["Home", "Tax", "Insurance", "Telecom"].includes(i.categoryGroup);
         default:
           return active;
       }
@@ -125,7 +131,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
 
   const groups = Map.groupBy(rows, (r) => r.groupKey);
   // Fixed order; any other group (e.g. Creator Tools) follows alphabetically.
-  const ORDER = ["Home", "Insurance", "Insurance · savings-type", "Telecom", "Memberships", "Software"];
+  const ORDER = ["Home", "Tax", "Insurance", "Insurance · savings-type", "Telecom", "Memberships", "Software"];
   const rank = (k: string) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
   const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 
