@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { fmtDay, isoDay, todayHK } from "@/lib/dates";
 import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
-import { money } from "@/lib/billing";
+import { money, nextInstalment, type CycleUnitName } from "@/lib/billing";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
 
@@ -12,7 +12,10 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const { id, termId } = await params;
   const term = await prisma.term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
-    include: { item: { select: { name: true, paymentMethodId: true } }, payments: { select: { amountHkd: true } } },
+    include: {
+      item: { select: { name: true, paymentMethodId: true, type: true } },
+      payments: { select: { amountHkd: true, paidAt: true }, orderBy: { paidAt: "desc" } },
+    },
   });
   if (!term) notFound();
   const [methods, candidates, riders] = await Promise.all([
@@ -26,21 +29,28 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const paid = term.payments.reduce((s, p) => s + Number(p.amountHkd), 0);
   const left = fullHkd !== null ? Math.max(0, Math.round((fullHkd - paid) * 100) / 100) : null;
 
+  // Recurring: each payment is one instalment, due one cycle after the last one.
+  const recurring = term.item.type === "RECURRING";
+  const prefillAmount = recurring ? fullHkd : left;
+  const prefillDate = recurring
+    ? nextInstalment(term.startDate, term.cycleUnit as CycleUnitName, term.cycleCount, term.payments[0]?.paidAt ?? null)
+    : todayHK();
+
   return (
     <>
       <BackBar href={`/bills/${id}`} label="Back to item" />
       <h1 className="px-1 text-[26px] font-extrabold tracking-tight">Log payment</h1>
       <p className="mb-4 px-1 text-[13px] text-muted">
         {term.item.name} · term from {fmtDay(term.startDate)} · {money(Number(term.amount), term.currency)}
-        {paid > 0 && ` · ${money(Math.round(paid * 100) / 100)} paid so far`}
+        {paid > 0 && !recurring && ` · ${money(Math.round(paid * 100) / 100)} paid so far`}
       </p>
       <PaymentForm
         itemId={id}
         termId={termId}
         paymentId={null}
         d={{
-          paidAt: isoDay(todayHK()),
-          amountHkd: left ? String(left) : "",
+          paidAt: isoDay(prefillDate),
+          amountHkd: prefillAmount ? String(prefillAmount) : "",
           paymentMethodId: term.item.paymentMethodId ?? "",
           channel: "",
           combinedWith: [],

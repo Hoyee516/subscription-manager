@@ -138,6 +138,15 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
     if (!t || t.itemId !== itemId) return fail("Term not found.");
     await prisma.term.update({ where: { id: termId }, data: term });
   } else {
+    // Recurring: a new term is a price change, so the term running at that date ends the day before.
+    const it = await prisma.item.findUniqueOrThrow({ where: { id: itemId }, select: { type: true } });
+    if (it.type === "RECURRING") {
+      const dayBefore = new Date(term.startDate.getTime() - 86_400_000);
+      await prisma.term.updateMany({
+        where: { itemId, startDate: { lt: term.startDate }, OR: [{ endDate: null }, { endDate: { gte: term.startDate } }] },
+        data: { endDate: dayBefore },
+      });
+    }
     await prisma.term.create({ data: { ...term, itemId } });
   }
 

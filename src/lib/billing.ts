@@ -118,3 +118,12 @@ export const URGENCY_BORDER: Record<Exclude<Urgency, null>, string> = {
   orange: "border-[#E08A3C]",
   red: "border-[#D64545]",
 };
+
+/**
+ * Recurring bills: the next instalment date — one cycle after the latest payment,
+ * or the term start if nothing has been paid on it yet.
+ */
+export function nextInstalment(termStart: Date, unit: CycleUnitName, count: number, lastPaid: Date | null): Date {
+  if (!lastPaid || lastPaid < termStart) return termStart;
+  return stepCycle(lastPaid, unit, count);
+}

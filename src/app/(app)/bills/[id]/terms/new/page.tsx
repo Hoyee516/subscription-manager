@@ -3,20 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { addDays, isoDay } from "@/lib/dates";
 import { getRiderTermRows, termToDefaults } from "@/lib/lookups";
-import { stepCycle, type CycleUnitName } from "@/lib/billing";
+import { nextInstalment, stepCycle, type CycleUnitName } from "@/lib/billing";
 import TermForm from "@/components/TermForm";
 import { emptyTerm } from "@/components/TermFields";
 import { BackBar } from "@/components/ui";
 
 // New term, prefilled from the latest one: starts the day after it ends
 // (or one cycle later for open-ended terms), same price and cycle.
+// Recurring bills: starts at the next instalment (a price change mid-way).
 export default async function NewTermPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
   const item = await prisma.item.findFirst({
     where: { id, userId },
     include: {
-      terms: { orderBy: { startDate: "desc" }, take: 1 },
+      terms: {
+        orderBy: { startDate: "desc" },
+        take: 1,
+        include: { payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true } } },
+      },
     },
   });
   if (!item) notFound();
@@ -27,15 +32,22 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
   if (last) {
     const base = termToDefaults(last);
     const unit = last.cycleUnit as CycleUnitName;
-    const start = last.endDate ? addDays(last.endDate, 1) : stepCycle(last.startDate, unit, last.cycleCount);
-    const lengthDays = last.endDate ? Math.round((last.endDate.getTime() - last.startDate.getTime()) / 86_400_000) : null;
-    d = {
-      ...base,
-      startDate: isoDay(start),
-      endDate: lengthDays !== null ? isoDay(addDays(start, lengthDays)) : "",
-      dueDate: last.dueDate ? isoDay(start) : "",
-      notes: "",
-    };
+    if (item.type === "RECURRING") {
+      // A price change: the new term starts at the next instalment and keeps the
+      // same end date; saving ends the previous term the day before.
+      const start = nextInstalment(last.startDate, unit, last.cycleCount, last.payments[0]?.paidAt ?? null);
+      d = { ...base, startDate: isoDay(start), endDate: base.endDate, dueDate: "", notes: "" };
+    } else {
+      const start = last.endDate ? addDays(last.endDate, 1) : stepCycle(last.startDate, unit, last.cycleCount);
+      const lengthDays = last.endDate ? Math.round((last.endDate.getTime() - last.startDate.getTime()) / 86_400_000) : null;
+      d = {
+        ...base,
+        startDate: isoDay(start),
+        endDate: lengthDays !== null ? isoDay(addDays(start, lengthDays)) : "",
+        dueDate: last.dueDate ? isoDay(start) : "",
+        notes: "",
+      };
+    }
   }
 
   return (

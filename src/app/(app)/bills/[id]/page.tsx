@@ -257,7 +257,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                 )}
 
                 <div className="mt-2 flex gap-4">
-                  {!fullyPaid ? (
+                  {type === "RECURRING" && t.id === latest?.id ? (
+                    // Recurring: every cycle is a new payment on the current term.
+                    <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-brand">
+                      Log payment
+                    </Link>
+                  ) : !fullyPaid ? (
                     <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-brand">
                       {t.payments.length > 0 ? "Log next payment" : "Log payment"}
                     </Link>
