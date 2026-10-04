@@ -6,7 +6,7 @@ import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
 import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName, type LeadUnitName } from "@/lib/billing";
 import { toHkd } from "@/lib/fx";
-import { BackBar, Card, Pill, SectionLabel, btnPrimary } from "@/components/ui";
+import { BackBar, Card, Pill, SectionLabel } from "@/components/ui";
 import ReminderEditor from "@/components/ReminderEditor";
 import ItemStatusActions from "@/components/ItemStatusActions";
 
@@ -288,9 +288,6 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           </Card>
         )}
 
-        <Link href={`/bills/${item.id}/terms/new`} className={btnPrimary}>
-          Start new term
-        </Link>
         <ItemStatusActions itemId={item.id} status={item.status} />
       </div>
     </>

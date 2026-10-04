@@ -39,3 +39,12 @@ input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
   margin: 0;
 }
+
+/* Tailwind v4 resets buttons to the default arrow cursor; restore the pointer
+   so every clickable button shows the hand on desktop. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
