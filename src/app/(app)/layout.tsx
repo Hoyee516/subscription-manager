@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   await requireUserId();
   return (
     <>
-      <main className="mx-auto max-w-md px-4 pt-5 pb-28">{children}</main>
+      <main className="mx-auto max-w-md px-4 pt-5 pb-40">{children}</main>
       <BottomNav />
     </>
   );
