@@ -23,3 +23,15 @@ body {
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
 }
+
+/* iOS Safari gives date inputs a fixed intrinsic width that ignores w-full,
+   so in a 2-column grid they overflow into the next box. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}

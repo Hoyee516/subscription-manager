@@ -67,7 +67,7 @@ export function BackBar({ href, label, right }: { href: string; label: string; r
 
 export function Field({ label, htmlFor, children, hint }: { label: string; htmlFor: string; children: React.ReactNode; hint?: string }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={htmlFor} className={labelCls}>
         {label}
       </label>

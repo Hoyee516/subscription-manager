@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createItem, updateItem } from "@/app/actions/items";
 import { ITEM_TYPES, type ItemTypeName } from "@/lib/billing";
+import PickOrType from "./PickOrType";
 import TermFields, { emptyTerm } from "./TermFields";
 import { useAction } from "./useAction";
 import { Card, Field, SectionLabel, btnPrimary, inputCls, labelCls } from "./ui";
@@ -57,10 +58,10 @@ export default function ItemForm({
         </Field>
         <div className="grid grid-cols-2 gap-2.5">
           <Field label="Group" htmlFor="categoryGroup">
-            <input id="categoryGroup" name="categoryGroup" list="groups" required defaultValue={d.categoryGroup} className={inputCls} />
+            <PickOrType id="categoryGroup" name="categoryGroup" options={groups} defaultValue={d.categoryGroup} />
           </Field>
           <Field label="Category" htmlFor="category">
-            <input id="category" name="category" list="categories" required defaultValue={d.category} className={inputCls} />
+            <PickOrType id="category" name="category" options={categories} defaultValue={d.category} />
           </Field>
         </div>
         <Field label="Charged to" htmlFor="paymentMethodId" hint="The card or account this is billed to. Prefills Log payment.">
@@ -73,16 +74,6 @@ export default function ItemForm({
             ))}
           </select>
         </Field>
-        <datalist id="groups">
-          {groups.map((g) => (
-            <option key={g} value={g} />
-          ))}
-        </datalist>
-        <datalist id="categories">
-          {categories.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
 
         <div className="flex flex-col gap-1.5">
           <span className={labelCls}>Billing type</span>
