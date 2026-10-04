@@ -29,9 +29,13 @@ body {
 input[type="date"] {
   -webkit-appearance: none;
   appearance: none;
-  display: block;
+  /* Flex lets iOS centre the date vertically; without it, appearance:none
+     pins the value to the top of the box. */
+  display: flex;
+  align-items: center;
   min-width: 0;
 }
 input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
+  margin: 0;
 }
