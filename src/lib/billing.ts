@@ -30,6 +30,7 @@ export const CHANNELS = [
   { value: "IN_PERSON", label: "In person" },
   { value: "FPS", label: "FPS" },
   { value: "AUTOPAY", label: "Autopay" },
+  { value: "BILL_PAYMENT", label: "Bill Payment" },
   { value: "OTHER", label: "Other" },
 ] as const;
 
