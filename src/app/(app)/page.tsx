@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { requireUserId } from "@/lib/session";
-import { addDays, addMonths, fmtDay, fmtMonth, todayHK } from "@/lib/dates";
+import { addDays, fmtDay, todayHK } from "@/lib/dates";
 import { money } from "@/lib/billing";
-import { CATEGORY, isLapsed, itemMonthly, loadData, occurrences, priceHikes, summary, type Category } from "@/lib/schedule";
+import { CATEGORY, isLapsed, itemMonthly, loadData, occurrences, summary, type Category } from "@/lib/schedule";
+import { loadAlerts } from "@/lib/alerts";
+import AlertList from "@/components/AlertList";
 import PageHeader from "@/components/PageHeader";
-import { Card, Pill, SectionLabel } from "@/components/ui";
+import { Bell } from "lucide-react";
+import { Card, SectionLabel } from "@/components/ui";
 
 const WEEKDAY = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -16,59 +19,8 @@ export default async function HomePage() {
   const data = await loadData(userId);
   const s = summary(data, today);
 
-  // Needs attention: price hikes, utility bills up ≥10% year on year, bills to enter, unpaid utility bills.
-  const attention: { key: string; tone: "orange" | "blue"; title: string; sub: string; pill: string; href: string }[] = [];
-  for (const h of priceHikes(data, today)) {
-    attention.push({
-      key: `h-${h.id}`,
-      tone: "orange",
-      title: `${h.name} up ${h.pct.toFixed(1)}%`,
-      sub: `${money(h.from, h.currency)} → ${money(h.to, h.currency)}${h.perYear ? ` · +${money(r0(h.perYear))} a year` : ""}`,
-      pill: "Price hike",
-      href: `/bills/${h.id}`,
-    });
-  }
-  const thisMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
-  for (const u of data.utilities) {
-    const b = u.bills[u.bills.length - 1];
-    if (!b || b.periodStart < addMonths(thisMonth, -3)) continue;
-    const prev = u.bills.find((x) => x.periodStart.getTime() === addMonths(b.periodStart, -12).getTime());
-    if (prev && Number(prev.amount) > 0) {
-      const pct = (Number(b.amount) / Number(prev.amount) - 1) * 100;
-      if (pct >= 10)
-        attention.push({
-          key: `y-${b.id}`,
-          tone: "orange",
-          title: `${u.name} ${MON[b.periodStart.getUTCMonth()]} bill +${pct.toFixed(1)}% vs last year`,
-          sub: `${money(Number(b.amount))} vs ${money(Number(prev.amount))} in ${fmtMonth(prev.periodStart)}`,
-          pill: "Price hike",
-          href: `/utilities/bills/${b.id}`,
-        });
-    }
-  }
-  for (const u of data.utilities) {
-    for (const b of u.bills)
-      if (!b.paidAt && b.dueDate)
-        attention.push({
-          key: `p-${b.id}`,
-          tone: "blue",
-          title: `${u.name} · ${fmtMonth(b.periodStart)} bill ${b.dueDate < today ? "overdue" : "due"}`,
-          sub: `${money(Number(b.amount))} · due ${fmtDay(b.dueDate)}`,
-          pill: "Unpaid",
-          href: `/utilities/bills/${b.id}`,
-        });
-    const latest = u.bills[u.bills.length - 1];
-    if (!latest) continue;
-    for (let m = addMonths(latest.periodStart, u.cycleMonths); m <= thisMonth; m = addMonths(m, u.cycleMonths))
-      attention.push({
-        key: `r-${u.id}-${m.toISOString()}`,
-        tone: "blue",
-        title: `${u.name} · ${fmtMonth(m)} bill not recorded`,
-        sub: `Last bill: ${fmtMonth(latest.periodStart)}`,
-        pill: "To record",
-        href: `/utilities/bills/new?u=${u.id}&m=${m.toISOString().slice(0, 7)}`,
-      });
-  }
+  // Needs attention: the 10 alert kinds, minus dismissed ones (see lib/alerts.ts).
+  const alerts = await loadAlerts(userId, data, today);
 
   const soon = occurrences(data, today, addDays(today, 30), today).filter((o) => o.kind === "charge" && !o.paid);
   const big = occurrences(data, addDays(today, 31), addDays(today, 120), today)
@@ -88,7 +40,24 @@ export default async function HomePage() {
 
   return (
     <>
-      <PageHeader title="Overview" sub={`${WEEKDAY[today.getUTCDay()]}, ${fmtDay(today)} · all figures in HKD`} />
+      <PageHeader
+        title="Overview"
+        sub={`${WEEKDAY[today.getUTCDay()]}, ${fmtDay(today)} · all figures in HKD`}
+        right={
+          <a
+            href="#attention"
+            aria-label={`Needs attention: ${alerts.active.length}`}
+            className="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-line bg-white text-ink"
+          >
+            <Bell size={19} />
+            {alerts.active.length > 0 && (
+              <i className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E34948] px-1.5 text-[11px] font-extrabold not-italic text-white">
+                {alerts.active.length}
+              </i>
+            )}
+          </a>
+        }
+      />
       <div className="flex flex-col gap-3">
         <section className="flex flex-col gap-3.5 rounded-2xl bg-brand p-4 text-white">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#B5DDD4]">Monthly recurring cost</p>
@@ -152,27 +121,12 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <Card className="flex flex-col gap-1">
-          <SectionLabel>Needs attention</SectionLabel>
-          {attention.length === 0 ? (
-            <p className="py-2 text-sm text-muted">Nothing needs attention.</p>
-          ) : (
-            <ul>
-              {attention.map((a) => (
-                <li key={a.key} className="border-t border-[#EEEFEA] first:border-t-0">
-                  <Link href={a.href} className="flex items-start gap-3 py-2.5">
-                    <span className={`mt-1 h-2.5 w-2.5 flex-none rounded-full ${a.tone === "orange" ? "bg-hike" : "bg-info"}`} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold">{a.title}</span>
-                      <span className="block text-xs text-muted">{a.sub}</span>
-                    </span>
-                    <Pill tone={a.tone}>{a.pill}</Pill>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        <div id="attention" className="scroll-mt-4">
+          <Card className="flex flex-col gap-1">
+            <SectionLabel>Needs attention{alerts.active.length ? ` · ${alerts.active.length}` : ""}</SectionLabel>
+            <AlertList active={alerts.active} dismissed={alerts.dismissed} />
+          </Card>
+        </div>
 
         <Card className="flex flex-col gap-1">
           <div className="flex items-center justify-between">

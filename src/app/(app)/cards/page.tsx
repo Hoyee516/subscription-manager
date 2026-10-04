@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Plus, TriangleAlert } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import { addMonths, todayHK } from "@/lib/dates";
+import { addDays, addMonths, todayHK } from "@/lib/dates";
+import { cardExpiry, expText } from "@/lib/alerts";
 import { money } from "@/lib/billing";
 import { isLapsed, itemMonthly, loadData, methodOf } from "@/lib/schedule";
 import PageHeader from "@/components/PageHeader";
@@ -32,6 +33,10 @@ export default async function CardsPage() {
   });
   const active = rows.filter((r) => r.m.isActive).sort((a, b) => b.year - a.year);
   const archived = rows.filter((r) => !r.m.isActive);
+  const expiringSoon = (m: (typeof methods)[number]) => {
+    const e = cardExpiry(m);
+    return !!e && e <= addDays(today, 60);
+  };
   const unassigned = live.filter((i) => !methodOf(i) && i.type !== "TRIAL");
 
   return (
@@ -72,8 +77,16 @@ export default async function CardsPage() {
                 <span className="block text-sm font-bold">{m.label}</span>
                 <span className="block text-xs text-muted">
                   {TYPE_TEXT[m.type]}
-                  {m.issuer ? ` · ${m.issuer}` : ""} · edit
+                  {m.issuer ? ` · ${m.issuer}` : ""}
+                  {m.expiryMonth && m.expiryYear && !expiringSoon(m) ? ` · Exp ${expText(m)}` : ""} · edit
                 </span>
+                {expiringSoon(m) && (
+                  <span className="mt-1 inline-block">
+                    <Pill tone="blue">
+                      {cardExpiry(m)! < today ? "Expired" : "Exp"} {expText(m)}
+                    </Pill>
+                  </span>
+                )}
               </Link>
               {items.length || utilityNames.length ? (
                 <span className="text-right">

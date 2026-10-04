@@ -78,14 +78,17 @@ export function categoryOf(i: { isSavings: boolean; categoryGroup: string }): Ca
   return "subs";
 }
 
-export async function loadData(userId: string) {
+/** Everything active for a user; `only` narrows it to one bill or one utility. */
+export async function loadData(userId: string, only?: { itemId: string } | { utilityId: string }) {
+  const itemWhere = only ? ("itemId" in only ? { id: only.itemId } : { id: { in: [] as string[] } }) : {};
+  const utilityWhere = only ? ("utilityId" in only ? { id: only.utilityId } : { id: { in: [] as string[] } }) : {};
   const [items, utilities] = await Promise.all([
     prisma.item.findMany({
-      where: { userId, status: "ACTIVE" },
+      where: { userId, status: "ACTIVE", ...itemWhere },
       orderBy: { name: "asc" },
       include: {
-        paymentMethod: { select: { id: true, label: true } },
-        parent: { select: { paymentMethodId: true, paymentMethod: { select: { id: true, label: true } } } },
+        paymentMethod: { select: { id: true, label: true, isActive: true } },
+        parent: { select: { paymentMethodId: true, paymentMethod: { select: { id: true, label: true, isActive: true } } } },
         terms: {
           orderBy: { startDate: "asc" },
           include: { payments: { select: { paidAt: true, amountHkd: true } }, instalments: { orderBy: { dueDate: "asc" } } },
@@ -93,7 +96,7 @@ export async function loadData(userId: string) {
       },
     }),
     prisma.utility.findMany({
-      where: { userId, isActive: true },
+      where: { userId, isActive: true, ...utilityWhere },
       orderBy: { name: "asc" },
       include: { bills: { orderBy: { periodStart: "asc" }, include: { paymentMethod: { select: { label: true } } } } },
     }),
@@ -101,7 +104,9 @@ export async function loadData(userId: string) {
   return { items, utilities };
 }
 type Data = Awaited<ReturnType<typeof loadData>>;
+export type LoadedData = Data;
 export type LoadedItem = Data["items"][number];
+export type LoadedUtility = Data["utilities"][number];
 
 /** Trials, one-offs and prepaid bills whose last term has ended count as ended (same rule as the Bills list). */
 export function isLapsed(i: LoadedItem, today: Date): boolean {
@@ -274,7 +279,7 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
 
 /** Price hikes: an item's latest term costs more than the one before, started in the last 120 days or about to. */
 export function priceHikes(data: Data, today: Date) {
-  const out: { id: string; name: string; pct: number; from: number; to: number; currency: string; perYear: number | null }[] = [];
+  const out: { id: string; termId: string; name: string; pct: number; from: number; to: number; currency: string; perYear: number | null }[] = [];
   for (const i of data.items) {
     if (isLapsed(i, today) || i.terms.length < 2) continue;
     const t = i.terms[i.terms.length - 1];
@@ -287,7 +292,7 @@ export function priceHikes(data: Data, today: Date) {
     const ha = termHkd(p);
     const hb = termHkd(t);
     const perYear = ha != null && hb != null ? ((hb - ha) / cycleMonths(t)) * 12 : null;
-    out.push({ id: i.id, name: i.name, pct: (b / a - 1) * 100, from: a, to: b, currency: t.currency, perYear });
+    out.push({ id: i.id, termId: t.id, name: i.name, pct: (b / a - 1) * 100, from: a, to: b, currency: t.currency, perYear });
   }
   return out.sort((x, y) => y.pct - x.pct);
 }

@@ -29,3 +29,5 @@ service-account*.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.calendar-test-event
+reminders.csv

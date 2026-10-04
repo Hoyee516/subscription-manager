@@ -5,23 +5,26 @@ import { Pencil } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
-import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName, type LeadUnitName } from "@/lib/billing";
+import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName } from "@/lib/billing";
 import { toHkd } from "@/lib/fx";
 import { BackBar, Card, Pill, SectionLabel } from "@/components/ui";
 import ReminderEditor from "@/components/ReminderEditor";
 import ItemStatusActions from "@/components/ItemStatusActions";
+import { loadData } from "@/lib/schedule";
+import { itemTarget } from "@/lib/remind";
+import { calendarConfigured } from "@/lib/gcal";
 
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
-  const item = await prisma.item.findFirst({
+  const [item, sched, user] = await Promise.all([
+    prisma.item.findFirst({
     where: { id, userId },
     include: {
       parent: { select: { id: true, name: true } },
       paymentMethod: { select: { label: true } },
       riders: { orderBy: { name: "asc" }, include: { terms: { orderBy: { startDate: "asc" } } } },
-      reminders: { orderBy: { createdAt: "asc" } },
       terms: {
         orderBy: { startDate: "asc" },
         include: {
@@ -30,7 +33,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
         },
       },
     },
-  });
+    }),
+    loadData(userId, { itemId: id }),
+    prisma.user.findUnique({ where: { id: userId }, select: { calendarId: true } }),
+  ]);
   if (!item) notFound();
 
   const today = todayHK();
@@ -41,6 +47,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     .flatMap((t) => t.payments)
     .reduce<(typeof item.terms)[number]["payments"][number] | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
   const nd = nextDate(type, item.status === "ACTIVE", item.terms, today);
+  const schedItem = sched.items[0];
+  const remTarget = schedItem ? itemTarget(schedItem, sched, today) : null;
 
   const head = latest
     ? (() => {
@@ -312,8 +320,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           <SectionLabel>Reminders</SectionLabel>
           <ReminderEditor
             target={{ itemId: item.id }}
-            allowHours={type === "TRIAL"}
-            initial={item.reminders.map((r) => ({ offset: r.offset, unit: r.unit as LeadUnitName }))}
+            initialOn={item.remind}
+            next={remTarget ? { date: remTarget.date.toISOString().slice(0, 10), title: remTarget.title } : null}
+            calendarReady={calendarConfigured(user?.calendarId)}
             beforeWhat={type === "CONTRACT" ? "contract end" : type === "PASS" || type === "TRIAL" || type === "PREPAID" ? "end date" : "due date"}
           />
         </Card>

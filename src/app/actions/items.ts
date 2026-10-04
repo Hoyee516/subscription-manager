@@ -5,7 +5,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
-import { CHANNELS, CYCLE_UNITS, ITEM_TYPES, type LeadUnitName } from "@/lib/billing";
+import { CHANNELS, CYCLE_UNITS, ITEM_TYPES } from "@/lib/billing";
+import { deleteItemEvents, syncLater } from "@/lib/remind";
 
 export type ActionResult = { ok: true; id?: string; warning?: string } | { ok: false; error: string };
 
@@ -94,6 +95,7 @@ export async function createItem(fd: FormData): Promise<ActionResult> {
     data: { ...item, userId, paymentMethodId, terms: { create: term } },
   });
   revalidatePath("/bills");
+  syncLater(userId);
   return { ok: true, id: created.id };
 }
 
@@ -106,6 +108,7 @@ export async function updateItem(itemId: string, fd: FormData): Promise<ActionRe
   await prisma.item.update({ where: { id: itemId }, data: { ...item, paymentMethodId } });
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
+  syncLater(userId);
   return { ok: true, id: itemId };
 }
 
@@ -115,12 +118,15 @@ export async function setItemStatus(itemId: string, status: "ACTIVE" | "ENDED" |
   await prisma.item.update({ where: { id: itemId }, data: { status } });
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
+  syncLater(userId);
   return { ok: true, id: itemId };
 }
 
 export async function deleteItem(itemId: string): Promise<ActionResult> {
   const userId = await requireUserId();
   if (!(await ownItem(userId, itemId))) return fail("Item not found.");
+  const riders = await prisma.item.findMany({ where: { parentId: itemId }, select: { id: true } });
+  await deleteItemEvents(userId, [itemId, ...riders.map((r) => r.id)]);
   await prisma.item.delete({ where: { id: itemId } }); // cascades to riders, terms, payments, reminders
   revalidatePath("/bills");
   return { ok: true };
@@ -189,6 +195,7 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
 
   revalidatePath(`/bills/${itemId}`);
   revalidatePath("/bills");
+  syncLater(userId);
   return { ok: true, id: itemId };
 }
 
@@ -220,6 +227,7 @@ export async function deleteTerm(termId: string): Promise<ActionResult> {
   for (const r of riderTerms) revalidatePath(`/bills/${r.itemId}`);
   revalidatePath(`/bills/${t.itemId}`);
   revalidatePath("/bills");
+  syncLater(userId);
   return {
     ok: true,
     id: t.itemId,
@@ -291,6 +299,7 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
   revalidatePath(`/bills/${t.itemId}`);
   for (const it of partners) revalidatePath(`/bills/${it.id}`);
   revalidatePath("/bills");
+  syncLater(userId);
   return {
     ok: true,
     id: t.itemId,
@@ -486,36 +495,28 @@ export async function deletePayment(paymentId: string): Promise<ActionResult> {
   await prisma.payment.deleteMany({ where: { id: { in: [paymentId, ...riderPayments.map((r) => r.id)] } } });
   for (const b of new Set([p.batchId, ...riderPayments.map((r) => r.batchId)])) if (b) await cleanupBatch(b);
   revalidatePath(`/bills/${p.term.itemId}`);
+  syncLater(userId);
   return { ok: true, id: p.term.itemId };
 }
 
 // ---------- reminders (items and utilities) ----------
 
-const LEAD_UNITS: LeadUnitName[] = ["HOUR", "DAY", "WEEK", "MONTH"];
-
-export async function saveReminders(
-  target: { itemId: string } | { utilityId: string },
-  reminders: { offset: number; unit: LeadUnitName }[]
-): Promise<ActionResult> {
+/**
+ * "Remind me in Google Calendar" on/off. On: the bill's next date is put in the calendar
+ * (notifications follow the calendar's default notifications). Off: the event is removed.
+ */
+export async function saveRemind(target: { itemId: string } | { utilityId: string }, remind: boolean): Promise<ActionResult> {
   const userId = await requireUserId();
-  const clean = reminders
-    .filter((r) => LEAD_UNITS.includes(r.unit) && Number.isInteger(r.offset) && r.offset >= 1 && r.offset <= 99)
-    .slice(0, 5);
-
   if ("itemId" in target) {
     if (!(await ownItem(userId, target.itemId))) return fail("Item not found.");
-    await prisma.$transaction([
-      prisma.reminder.deleteMany({ where: { itemId: target.itemId } }),
-      prisma.reminder.createMany({ data: clean.map((r) => ({ ...r, itemId: target.itemId })) }),
-    ]);
+    await prisma.item.update({ where: { id: target.itemId }, data: { remind } });
+    syncLater(userId, { itemId: target.itemId });
     revalidatePath(`/bills/${target.itemId}`);
   } else {
     const u = await prisma.utility.findFirst({ where: { id: target.utilityId, userId }, select: { id: true } });
     if (!u) return fail("Utility not found.");
-    await prisma.$transaction([
-      prisma.reminder.deleteMany({ where: { utilityId: u.id } }),
-      prisma.reminder.createMany({ data: clean.map((r) => ({ ...r, utilityId: u.id })) }),
-    ]);
+    await prisma.utility.update({ where: { id: u.id }, data: { remind } });
+    syncLater(userId, { utilityId: u.id });
     revalidatePath("/utilities");
   }
   return { ok: true };

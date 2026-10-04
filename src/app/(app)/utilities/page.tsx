@@ -3,11 +3,13 @@ import { Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { addMonths, fmtDay, fmtMonth, todayHK } from "@/lib/dates";
-import { money, type LeadUnitName } from "@/lib/billing";
+import { money } from "@/lib/billing";
 import PageHeader from "@/components/PageHeader";
 import UtilityChart from "@/components/UtilityChart";
 import ReminderEditor from "@/components/ReminderEditor";
 import { Card, Pill, SectionLabel } from "@/components/ui";
+import { utilityTarget } from "@/lib/remind";
+import { calendarConfigured } from "@/lib/gcal";
 
 const ym = (d: Date) => d.toISOString().slice(0, 7); // "2026-10"
 const cycleText = (m: number) => (m === 1 ? "monthly" : m === 3 ? "quarterly" : `every ${m} months`);
@@ -24,13 +26,16 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
     orderBy: { name: "asc" },
     include: {
       bills: { orderBy: { periodStart: "desc" }, include: { paymentMethod: { select: { label: true } } } },
-      reminders: { orderBy: { createdAt: "asc" } },
     },
   });
   if (utilities.length === 0) {
     return <PageHeader title="Utilities" sub="No utilities yet" />;
   }
   const sel = utilities.find((x) => x.id === u) ?? utilities[0];
+  // The calendar event "Remind me" creates (bills oldest-first, as the schedule expects).
+  const remTarget = utilityTarget({ ...sel, bills: [...sel.bills].reverse() }, today);
+  const calUser = await prisma.user.findUnique({ where: { id: userId }, select: { calendarId: true } });
+  const calendarReady = calendarConfigured(calUser?.calendarId);
 
   // Average monthly cost over the last 12 months of bills.
   const tiles = utilities.map((x) => {
@@ -143,8 +148,10 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
           <ReminderEditor
             key={sel.id}
             target={{ utilityId: sel.id }}
-            initial={sel.reminders.map((r) => ({ offset: r.offset, unit: r.unit as LeadUnitName }))}
-            beforeWhat="the bill's due date"
+            initialOn={sel.remind}
+            next={remTarget ? { date: remTarget.date.toISOString().slice(0, 10), title: remTarget.title } : null}
+            calendarReady={calendarReady}
+            beforeWhat="bill due date"
           />
         </Card>
       </div>

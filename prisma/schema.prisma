@@ -61,7 +61,12 @@ enum AlertType {
   TRIAL_ENDING
   PASS_ENDING
   CARD_EXPIRING
-  BILL_TO_RECORD
+  BILL_TO_RECORD // "Not logged": a due date passed without a payment (and unpaid utility bills)
+  UTILITY_JUMP // utility bill ≥10% above the same month last year
+  AUTO_RENEWAL // auto-renewing term ends within 30 days
+  NO_CARD // active bill with no (or an archived) payment method
+  UTILITY_MISSING // utility bill month not entered
+  SYNC_FAILED // Google Calendar rejected an event
 }
 
 // ---------- Models ----------
@@ -120,7 +125,9 @@ model Item {
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   cancelUrl       String?
   notes           String?
-  calEventId      String? // Google Calendar event (Phase 3)
+  remind          Boolean        @default(false) // reminders on: shown and synced to Google Calendar
+  calEventId      String? // Google Calendar event for the next date
+  calEventHash    String? // what was last sent, so unchanged events aren't re-sent
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   terms           Term[]
@@ -193,17 +200,20 @@ model PaymentBatch {
 }
 
 model Utility {
-  id          String        @id @default(uuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String // "Electricity", "Water", "Rates & Gov Rent"
-  provider    String?
-  cycleMonths Int // 2 = bimonthly, 3 = quarterly, 4 = every 4 months
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  bills       UtilityBill[]
-  reminders   Reminder[]
-  alerts      Alert[]
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String // "Electricity", "Water", "Rates & Gov Rent"
+  provider     String?
+  cycleMonths  Int // 2 = bimonthly, 3 = quarterly, 4 = every 4 months
+  isActive     Boolean       @default(true)
+  remind       Boolean       @default(false) // reminders on: shown and synced to Google Calendar
+  calEventId   String?
+  calEventHash String?
+  createdAt    DateTime      @default(now())
+  bills        UtilityBill[]
+  reminders    Reminder[]
+  alerts       Alert[]
 
   @@unique([userId, name])
 }
@@ -247,9 +257,11 @@ model Alert {
   item        Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   utilityId   String?
   utility     Utility?  @relation(fields: [utilityId], references: [id], onDelete: Cascade)
-  message     String
+  message     String // title shown in Needs attention
+  detail      String? // second line
+  href        String? // where tapping the alert goes
   dueAt       DateTime
-  dedupeKey   String    @unique // e.g. "DUE_SOON:<itemId>:2027-08-01" — the daily job can re-run safely
+  dedupeKey   String    @unique // e.g. "PRICE_HIKE:<itemId>:<termId>"; a dismissed key never shows again
   readAt      DateTime?
   dismissedAt DateTime?
   createdAt   DateTime  @default(now())

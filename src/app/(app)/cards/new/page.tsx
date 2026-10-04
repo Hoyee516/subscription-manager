@@ -8,7 +8,7 @@ export default async function NewMethodPage() {
     <>
       <BackBar href="/cards" label="Back to payment methods" />
       <h1 className="mb-4 px-1 text-[26px] font-extrabold tracking-tight">New payment method</h1>
-      <MethodForm id={null} d={{ label: "", type: "CARD", issuer: "", isActive: true }} />
+      <MethodForm id={null} d={{ label: "", type: "CARD", issuer: "", isActive: true, expiryMonth: null, expiryYear: null }} />
     </>
   );
 }

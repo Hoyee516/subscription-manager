@@ -13,7 +13,7 @@ export default async function EditMethodPage({ params }: { params: Promise<{ id:
     <>
       <BackBar href="/cards" label="Back to payment methods" />
       <h1 className="mb-4 px-1 text-[26px] font-extrabold tracking-tight">Edit payment method</h1>
-      <MethodForm id={m.id} d={{ label: m.label, type: m.type, issuer: m.issuer ?? "", isActive: m.isActive }} />
+      <MethodForm id={m.id} d={{ label: m.label, type: m.type, issuer: m.issuer ?? "", isActive: m.isActive, expiryMonth: m.expiryMonth, expiryYear: m.expiryYear }} />
     </>
   );
 }

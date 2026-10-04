@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
+import { syncLater } from "@/lib/remind";
 import type { ActionResult } from "./items";
 
 function str(fd: FormData, key: string): string {
@@ -58,6 +59,7 @@ export async function saveUtilityBill(utilityId: string, billId: string | null, 
   } else {
     await prisma.utilityBill.create({ data: { ...data, utilityId } });
   }
+  syncLater(userId, { utilityId });
   revalidatePath("/utilities");
   return { ok: true, id: utilityId };
 }
@@ -67,6 +69,7 @@ export async function deleteUtilityBill(billId: string): Promise<ActionResult> {
   const b = await prisma.utilityBill.findFirst({ where: { id: billId, utility: { userId } }, select: { id: true, utilityId: true } });
   if (!b) return { ok: false, error: "Bill not found." };
   await prisma.utilityBill.delete({ where: { id: billId } });
+  syncLater(userId, { utilityId: b.utilityId });
   revalidatePath("/utilities");
   return { ok: true, id: b.utilityId };
 }

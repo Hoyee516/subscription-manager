@@ -3,14 +3,19 @@ import { saveMethod, setMethodActive } from "@/app/actions/methods";
 import { useAction } from "./useAction";
 import { Card, Field, btnPrimary, inputCls } from "./ui";
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export default function MethodForm({
   id,
   d,
 }: {
   id: string | null;
-  d: { label: string; type: string; issuer: string; isActive: boolean };
+  d: { label: string; type: string; issuer: string; isActive: boolean; expiryMonth: number | null; expiryYear: number | null };
 }) {
   const { pending, run } = useAction();
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 12 }, (_, k) => thisYear - 1 + k);
+  if (d.expiryYear && !years.includes(d.expiryYear)) years.unshift(d.expiryYear);
   return (
     <form
       className="flex flex-col gap-3"
@@ -36,6 +41,26 @@ export default function MethodForm({
             <input id="issuer" name="issuer" defaultValue={d.issuer} placeholder="Optional" className={inputCls} />
           </Field>
         </div>
+        <Field label="Expires" htmlFor="expiryMonth" hint="For the card-expiring alert. Leave blank for FPS or bank accounts.">
+          <div className="grid grid-cols-2 gap-2.5">
+            <select id="expiryMonth" name="expiryMonth" defaultValue={d.expiryMonth ?? ""} className={inputCls} aria-label="Expiry month">
+              <option value="">Month</option>
+              {MONTHS.map((m, k) => (
+                <option key={m} value={k + 1}>
+                  {String(k + 1).padStart(2, "0")} · {m}
+                </option>
+              ))}
+            </select>
+            <select name="expiryYear" defaultValue={d.expiryYear ?? ""} className={inputCls} aria-label="Expiry year">
+              <option value="">Year</option>
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        </Field>
       </Card>
       <button type="submit" disabled={pending} className={btnPrimary}>
         {pending ? "Saving…" : id ? "Save" : "Add payment method"}
