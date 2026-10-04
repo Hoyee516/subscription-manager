@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Pencil } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
@@ -81,10 +82,14 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     })
     .reverse();
 
+  // Back returns to the Bills tab you came from (remembered by RememberTab).
+  const tab = (await cookies()).get("billsTab")?.value;
+  const backToTab = tab && tab !== "all" && /^[a-z]+$/.test(tab) ? `/bills?f=${tab}` : "/bills";
+
   return (
     <>
       <BackBar
-        href={item.parent ? `/bills/${item.parent.id}` : "/bills"}
+        href={item.parent ? `/bills/${item.parent.id}` : backToTab}
         label="Back"
         right={
           <Link href={`/bills/${item.id}/edit`} aria-label="Edit item" className="flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white">
@@ -174,11 +179,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                     <p className="text-sm font-bold">
                       {fmtDay(t.startDate)} – {t.endDate ? fmtDay(t.endDate) : "ongoing"}
                     </p>
-                    {(months || t.amountHkd) && (
-                      <p className="text-xs text-muted">
-                        {[months ? `${months}-month contract` : "", t.amountHkd ? money(Number(t.amountHkd)) : ""].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
+                    {(() => {
+                      // HKD figure: the entered HKD equivalent, else ≈ at the fixed rate for foreign currencies.
+                      const conv = t.currency === "HKD" ? null : toHkd(amt, t.currency, t.amountHkd ? Number(t.amountHkd) : null);
+                      const hkdText = conv?.hkd != null ? `${conv.approx ? "≈" : ""}${money(conv.hkd)}` : "";
+                      const line = [months ? `${months}-month contract` : "", hkdText].filter(Boolean).join(" · ");
+                      return line ? <p className="text-xs text-muted">{line}</p> : null;
+                    })()}
                     {t.notes && <p className="mt-0.5 text-xs text-muted">{t.notes}</p>}
                   </div>
                   <div className="shrink-0 text-right">
@@ -191,7 +198,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                   <Link key={r.id} href={`/bills/${r.id}`} className="mt-1.5 flex items-start justify-between gap-3">
                     <span className="min-w-0 text-[13px]">
                       <span className="font-bold">+ {r.name}</span>
-                      {r.hkd !== null && <span className="block text-xs text-muted">{money(r.hkd)}</span>}
+                      {r.currency !== "HKD" &&
+                        (() => {
+                          const c = toHkd(r.amt, r.currency, r.hkd);
+                          return c.hkd !== null && <span className="block text-xs text-muted">{`${c.approx ? "≈" : ""}${money(c.hkd)}`}</span>;
+                        })()}
                     </span>
                     <span className="shrink-0 text-right">
                       <span className="block text-[13px] font-bold">{money(r.amt, r.currency)}</span>
@@ -206,7 +217,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                 {total !== null && (
                   <div className="mt-1.5 flex items-start justify-between gap-3 border-t border-line pt-1.5">
                     <span className="text-[13px] font-bold">
-                      Year total
+                      Term total
                       {totalHkd !== null && <span className="block text-xs font-normal text-muted">{money(totalHkd)}</span>}
                     </span>
                     <span className="text-[13px] font-extrabold">{money(total, t.currency)}</span>

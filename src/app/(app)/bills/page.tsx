@@ -15,6 +15,7 @@ import {
   type ItemTypeName,
 } from "@/lib/billing";
 import PageHeader from "@/components/PageHeader";
+import RememberTab from "@/components/RememberTab";
 import { Pill, groupTone } from "@/components/ui";
 
 const FILTERS = [
@@ -128,6 +129,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
     <>
       <div className="flex items-start justify-between">
         <PageHeader title="Bills" sub={`${rows.length} item${rows.length === 1 ? "" : "s"}`} />
+        <RememberTab tab={filter} />
         <Link href="/bills/new" aria-label="Add item" className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand text-white">
           <Plus size={22} strokeWidth={2.4} />
         </Link>
