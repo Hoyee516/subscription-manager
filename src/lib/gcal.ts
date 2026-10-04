@@ -22,8 +22,14 @@ function privateKey(): KeyObject {
     .replace(/^["']|["']$/g, "")
     .replace(/\\n/g, "\n")
     .replace(/\r/g, "");
-  const m = raw.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
-  if (!m) throw new CalendarError(0, "GOOGLE_PRIVATE_KEY isn't a PEM key (no BEGIN/END PRIVATE KEY lines).");
+  let m = raw.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  // Only the middle (base64) part pasted: wrap it.
+  if (!m && /^[A-Za-z0-9+/=\s]{800,}$/.test(raw)) m = ["", "PRIVATE KEY", raw] as unknown as RegExpMatchArray;
+  if (!m)
+    throw new CalendarError(
+      0,
+      `GOOGLE_PRIVATE_KEY isn't a PEM key (no BEGIN/END PRIVATE KEY lines; ${raw.length} characters, starts "${raw.slice(0, 5)}").`
+    );
   const body = m[2].replace(/\s+/g, "");
   const pem = `-----BEGIN ${m[1]}-----\n${body.match(/.{1,64}/g)!.join("\n")}\n-----END ${m[1]}-----\n`;
   parsedKey = createPrivateKey({ key: pem, format: "pem" });
