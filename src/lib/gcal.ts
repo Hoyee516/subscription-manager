@@ -4,14 +4,35 @@
 //
 // Env: GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY (the key from the JSON file, \n kept),
 //      GOOGLE_CALENDAR_ID (your Gmail address for your main calendar).
-import { createSign } from "crypto";
+import { createPrivateKey, createSign, type KeyObject } from "crypto";
 
 const email = () => process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const key = () => process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const rawKey = () => process.env.GOOGLE_PRIVATE_KEY;
+
+/**
+ * The private key as pasted into .env.local or Vercel can arrive with literal "\n"s,
+ * Windows line breaks, surrounding quotes, or with its line breaks turned into spaces.
+ * Rebuild a clean PEM, then parse it once (OpenSSL 3 rejects some raw PEM strings).
+ */
+let parsedKey: KeyObject | null = null;
+function privateKey(): KeyObject {
+  if (parsedKey) return parsedKey;
+  const raw = (rawKey() ?? "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "");
+  const m = raw.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) throw new CalendarError(0, "GOOGLE_PRIVATE_KEY isn't a PEM key (no BEGIN/END PRIVATE KEY lines).");
+  const body = m[2].replace(/\s+/g, "");
+  const pem = `-----BEGIN ${m[1]}-----\n${body.match(/.{1,64}/g)!.join("\n")}\n-----END ${m[1]}-----\n`;
+  parsedKey = createPrivateKey({ key: pem, format: "pem" });
+  return parsedKey;
+}
 export const defaultCalendarId = () => process.env.GOOGLE_CALENDAR_ID || null;
 
 export function calendarConfigured(calendarId?: string | null): boolean {
-  return !!(email() && key() && (calendarId || defaultCalendarId()));
+  return !!(email() && rawKey() && (calendarId || defaultCalendarId()));
 }
 
 export class CalendarError extends Error {
@@ -39,7 +60,7 @@ async function accessToken(): Promise<string> {
   );
   const signer = createSign("RSA-SHA256");
   signer.update(`${header}.${claims}`);
-  const jwt = `${header}.${claims}.${b64url(signer.sign(key()!))}`;
+  const jwt = `${header}.${claims}.${b64url(signer.sign(privateKey()))}`;
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
