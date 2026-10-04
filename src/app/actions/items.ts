@@ -7,7 +7,7 @@ import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
 import { CHANNELS, CYCLE_UNITS, ITEM_TYPES, type LeadUnitName } from "@/lib/billing";
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
+export type ActionResult = { ok: true; id?: string; warning?: string } | { ok: false; error: string };
 
 const fail = (error: string): ActionResult => ({ ok: false, error });
 
@@ -172,29 +172,112 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
     amountHkd,
     paymentMethodId: await ownMethod(userId, optStr(fd, "paymentMethodId")),
     channel: CHANNELS.some((c) => c.value === channel) ? (channel as (typeof CHANNELS)[number]["value"]) : null,
-    batchRef: optStr(fd, "batchRef"),
     note: optStr(fd, "note"),
   };
 
+  // Combined bill: only bills of this user with the same group + vendor are accepted.
+  const self = await prisma.item.findUniqueOrThrow({ where: { id: t.itemId }, select: { categoryGroup: true, vendor: true } });
+  const picked = fd.getAll("combinedWith").filter((v): v is string => typeof v === "string" && v !== "");
+  const partners = picked.length
+    ? await prisma.item.findMany({
+        where: { id: { in: picked, not: t.itemId }, userId, categoryGroup: self.categoryGroup, vendor: self.vendor },
+        select: { id: true, name: true },
+      })
+    : [];
+  const combinedTotal = decimal(fd, "combinedTotal");
+
+  let id = paymentId;
   if (paymentId) {
     const p = await prisma.payment.findFirst({ where: { id: paymentId, termId } });
     if (!p) return fail("Payment not found.");
     await prisma.payment.update({ where: { id: paymentId }, data });
   } else {
-    await prisma.payment.create({ data: { ...data, termId } });
+    id = (await prisma.payment.create({ data: { ...data, termId } })).id;
   }
+
+  const missing = await linkBatch(id!, paidAt, partners, combinedTotal);
+
   revalidatePath(`/bills/${t.itemId}`);
-  return { ok: true, id: t.itemId };
+  revalidatePath("/bills");
+  return {
+    ok: true,
+    id: t.itemId,
+    warning: missing.length
+      ? `No payment on the same date found for: ${missing.join(", ")}. Log it there and pick this bill to link it.`
+      : undefined,
+  };
+}
+
+/**
+ * Links a payment to the same-date payments of the partner bills (both ways),
+ * so opening any of them shows the same combined bill. Returns partner names
+ * that have no payment on that date yet.
+ */
+async function linkBatch(
+  paymentId: string,
+  paidAt: Date,
+  partners: { id: string; name: string }[],
+  totalHkd: Prisma.Decimal | null
+): Promise<string[]> {
+  const current = await prisma.payment.findUniqueOrThrow({
+    where: { id: paymentId },
+    select: { batchId: true, term: { select: { itemId: true } } },
+  });
+
+  if (partners.length === 0) {
+    if (current.batchId) {
+      await prisma.payment.update({ where: { id: paymentId }, data: { batchId: null } });
+      await cleanupBatch(current.batchId);
+    }
+    return [];
+  }
+
+  const found: { id: string; batchId: string | null }[] = [];
+  const missing: string[] = [];
+  for (const it of partners) {
+    const p = await prisma.payment.findFirst({
+      where: { paidAt, term: { itemId: it.id } },
+      select: { id: true, batchId: true },
+    });
+    if (p) found.push(p);
+    else missing.push(it.name);
+  }
+
+  const batchId =
+    current.batchId ??
+    found.find((p) => p.batchId)?.batchId ??
+    (await prisma.paymentBatch.create({ data: { totalHkd }, select: { id: true } })).id;
+  await prisma.paymentBatch.update({ where: { id: batchId }, data: { totalHkd } });
+
+  const keep = [paymentId, ...found.map((p) => p.id)];
+  // Unticked bills leave the batch.
+  await prisma.payment.updateMany({ where: { batchId, id: { notIn: keep } }, data: { batchId: null } });
+  await prisma.payment.updateMany({ where: { id: { in: keep } }, data: { batchId } });
+
+  // Partners that were in another batch may have left it with a single payment.
+  const oldBatches = new Set(found.map((p) => p.batchId).filter((b): b is string => !!b && b !== batchId));
+  for (const b of oldBatches) await cleanupBatch(b);
+  await cleanupBatch(batchId);
+  return missing;
+}
+
+/** A batch with fewer than two payments isn't a combined bill any more. */
+async function cleanupBatch(batchId: string) {
+  const left = await prisma.payment.count({ where: { batchId } });
+  if (left >= 2) return;
+  await prisma.payment.updateMany({ where: { batchId }, data: { batchId: null } });
+  await prisma.paymentBatch.delete({ where: { id: batchId } });
 }
 
 export async function deletePayment(paymentId: string): Promise<ActionResult> {
   const userId = await requireUserId();
   const p = await prisma.payment.findFirst({
     where: { id: paymentId, term: { item: { userId } } },
-    select: { id: true, term: { select: { itemId: true } } },
+    select: { id: true, batchId: true, term: { select: { itemId: true } } },
   });
   if (!p) return fail("Payment not found.");
   await prisma.payment.delete({ where: { id: paymentId } });
+  if (p.batchId) await cleanupBatch(p.batchId);
   revalidatePath(`/bills/${p.term.itemId}`);
   return { ok: true, id: p.term.itemId };
 }

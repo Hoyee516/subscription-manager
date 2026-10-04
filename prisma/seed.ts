@@ -93,6 +93,15 @@ async function main() {
     return id;
   };
 
+  // One PaymentBatch per distinct "batchRef" text (a combined bill), with its total.
+  const batches = new Map<string, string>();
+  for (const ref of new Set(data.items.flatMap((i) => i.terms.flatMap((t) => t.payments.map((p) => p.batchRef))))) {
+    if (!ref) continue;
+    const m = ref.match(/total\s*HK\$\s*([\d,]+(?:\.\d{1,2})?)/i);
+    const b = await prisma.paymentBatch.create({ data: { totalHkd: m ? m[1].replace(/,/g, "") : null } });
+    batches.set(ref, b.id);
+  }
+
   // Parents first so riders can point at them.
   const ordered = [...data.items].sort((a, b) => Number(!!a.parentKey) - Number(!!b.parentKey));
   const itemIds = new Map<string, string>();
@@ -139,7 +148,7 @@ async function main() {
               amountHkd: p.amountHkd,
               paymentMethodId: pmId(p.paymentMethod),
               channel: p.channel ?? null,
-              batchRef: p.batchRef ?? null,
+              batchId: p.batchRef ? batches.get(p.batchRef)! : null,
               note: p.note ?? null,
             })),
           },

@@ -17,6 +17,7 @@ export function useAction() {
         return;
       }
       toast.success(opts.success);
+      if (res.warning) toast.warning(res.warning, { duration: 8000 });
       // Navigate OR refresh — calling refresh() right after push() can cancel the
       // navigation and leave you on the form. The action's revalidatePath()
       // already makes the destination page load fresh data.

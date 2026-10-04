@@ -23,7 +23,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       reminders: { orderBy: { createdAt: "asc" } },
       terms: {
         orderBy: { startDate: "asc" },
-        include: { payments: { orderBy: { paidAt: "asc" } } },
+        include: { payments: { orderBy: { paidAt: "asc" }, include: { paymentMethod: { select: { label: true } } } } },
       },
     },
   });
@@ -32,6 +32,10 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const today = todayHK();
   const type = item.type as ItemTypeName;
   const latest = item.terms[item.terms.length - 1];
+  // Most recent payment across all terms decides the "In person" and "Combined bill" badges.
+  const lastPayment = item.terms
+    .flatMap((t) => t.payments)
+    .reduce<(typeof item.terms)[number]["payments"][number] | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
   const nd = nextDate(type, item.status === "ACTIVE", item.terms, today);
 
   const rates = await loadRates(latest ? [latest.currency] : []);
@@ -134,6 +138,18 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
               not set — add card
             </Link>
           )}
+          {lastPayment?.channel === "IN_PERSON" && (
+            <>
+              {" "}
+              <Pill tone="yellow">In person</Pill>
+            </>
+          )}
+          {lastPayment?.batchId && (
+            <>
+              {" "}
+              <Pill tone="pink">Combined bill</Pill>
+            </>
+          )}
         </p>
       </header>
 
@@ -199,6 +215,19 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                         <Link href={`/bills/${item.id}/payments/${p.id}`} className="text-xs font-bold text-ink">
                           💳 Paid {fmtDay(p.paidAt)}
                         </Link>
+                        {p.paymentMethod && <span className="text-xs text-muted"> ({p.paymentMethod.label})</span>}
+                        {p.channel === "IN_PERSON" && (
+                          <>
+                            {" "}
+                            <Pill tone="yellow">In person</Pill>
+                          </>
+                        )}
+                        {p.batchId && (
+                          <>
+                            {" "}
+                            <Pill tone="pink">Combined bill</Pill>
+                          </>
+                        )}
                       </li>
                     ))}
                     {t.payments.length > 1 && <li className="border-t border-line pt-1 text-xs text-muted">Total paid {money(paid)}</li>}

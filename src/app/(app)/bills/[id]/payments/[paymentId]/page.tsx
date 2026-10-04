@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { isoDay } from "@/lib/dates";
-import { getMethods } from "@/lib/lookups";
+import { getCombineCandidates, getMethods } from "@/lib/lookups";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
 
@@ -11,10 +11,13 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
   const { id, paymentId } = await params;
   const p = await prisma.payment.findFirst({
     where: { id: paymentId, term: { itemId: id, item: { userId } } },
-    include: { term: { select: { item: { select: { name: true } } } } },
+    include: {
+      term: { select: { item: { select: { name: true } } } },
+      batch: { include: { payments: { where: { id: { not: paymentId } }, select: { term: { select: { itemId: true } } } } } },
+    },
   });
   if (!p) notFound();
-  const methods = await getMethods(userId);
+  const [methods, candidates] = await Promise.all([getMethods(userId), getCombineCandidates(userId, id)]);
 
   return (
     <>
@@ -30,10 +33,12 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
           amountHkd: p.amountHkd.toString(),
           paymentMethodId: p.paymentMethodId ?? "",
           channel: p.channel ?? "",
-          batchRef: p.batchRef ?? "",
+          combinedWith: p.batch?.payments.map((x) => x.term.itemId) ?? [],
+          combinedTotal: p.batch?.totalHkd?.toString() ?? "",
           note: p.note ?? "",
         }}
         methods={methods}
+        candidates={candidates}
       />
     </>
   );

@@ -22,6 +22,17 @@ export async function getCategoryLists(userId: string) {
   };
 }
 
+/** Other bills that can share a combined payment: same group and vendor. */
+export async function getCombineCandidates(userId: string, itemId: string) {
+  const item = await prisma.item.findFirst({ where: { id: itemId, userId }, select: { categoryGroup: true, vendor: true } });
+  if (!item) return [];
+  return prisma.item.findMany({
+    where: { userId, categoryGroup: item.categoryGroup, vendor: item.vendor, id: { not: itemId } },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
 type TermRow = {
   startDate: Date;
   endDate: Date | null;

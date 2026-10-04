@@ -29,6 +29,14 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 
 type TermLike = { amount: { toString(): string }; currency: string; amountHkd: { toString(): string } | null };
 
+type PaymentLike = { paidAt: Date; channel: string | null; batchId: string | null };
+
+/** Most recent payment across all terms decides the "In person" and "Combined bill" badges. */
+function lastPaymentBadges(payments: PaymentLike[]) {
+  const last = payments.reduce<PaymentLike | null>((a, p) => (!a || p.paidAt >= a.paidAt ? p : a), null);
+  return { inPerson: last?.channel === "IN_PERSON", combined: !!last?.batchId };
+}
+
 export default async function BillsPage({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   const userId = await requireUserId();
   const { f } = await searchParams;
@@ -40,7 +48,10 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
     orderBy: [{ categoryGroup: "asc" }, { name: "asc" }],
     include: {
       paymentMethod: { select: { label: true } },
-      terms: { orderBy: { startDate: "asc" } },
+      terms: {
+        orderBy: { startDate: "asc" },
+        include: { payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true, channel: true, batchId: true } } },
+      },
       riders: { include: { terms: { orderBy: { startDate: "desc" }, take: 1 } } },
     },
   });
@@ -104,6 +115,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         ...amounts(t),
         cycle: t ? cycleLabel(t.cycleUnit as CycleUnitName, t.cycleCount) : "",
         card: i.paymentMethod?.label ?? null,
+        ...lastPaymentBadges(i.terms.flatMap((t) => t.payments)),
         next: nd ? `${nd.label} ${fmtDay(nd.date)}` : i.status === "CANCELLED" ? "Cancelled" : i.status === "ENDED" ? "Ended" : "",
         urgency: nothingAhead ? null : urgency(nd?.date, today),
         riders: i.riders.map((r) => ({ id: r.id, name: r.name, ...amounts(r.terms[0]) })),
@@ -174,6 +186,8 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
                           <Pill>{r.isSavings ? "Savings" : TYPE_LABEL[r.type]}</Pill>
                           {r.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
                           {r.status === "ACTIVE" && (r.card ? <Pill>{r.card}</Pill> : <Pill tone="orange">No card set</Pill>)}
+                          {r.inPerson && <Pill tone="yellow">In person</Pill>}
+                          {r.combined && <Pill tone="pink">Combined bill</Pill>}
                         </div>
                         {r.riders.map((rd) => (
                           <p key={rd.id} className="mt-2 flex justify-between gap-2 rounded-lg bg-[#F6F6F3] px-2.5 py-1.5 text-xs text-muted">

@@ -9,7 +9,8 @@ export type PaymentDefaults = {
   amountHkd: string;
   paymentMethodId: string;
   channel: string;
-  batchRef: string;
+  combinedWith: string[]; // item ids of the other bills in the same combined bill
+  combinedTotal: string;
   note: string;
 };
 
@@ -19,12 +20,14 @@ export default function PaymentForm({
   paymentId,
   d,
   methods,
+  candidates,
 }: {
   itemId: string;
   termId: string;
   paymentId: string | null;
   d: PaymentDefaults;
   methods: { id: string; label: string }[];
+  candidates: { id: string; name: string }[]; // same group + vendor
 }) {
   const { pending, run } = useAction();
   return (
@@ -67,9 +70,33 @@ export default function PaymentForm({
             </select>
           </Field>
         </div>
-        <Field label="Combined bill" htmlFor="batchRef" hint="If one payment covered several policies, describe it here.">
-          <input id="batchRef" name="batchRef" defaultValue={d.batchRef} className={inputCls} />
-        </Field>
+        {candidates.length > 0 && (
+          <>
+            <Field
+              label="Combined bill with"
+              htmlFor="combinedWith"
+              hint="Other bills paid in the same charge. Their payments on the same date are linked too."
+            >
+              <div id="combinedWith" className="flex flex-col gap-1 rounded-[10px] border border-[#D5D8D1] bg-white px-3 py-1">
+                {candidates.map((c) => (
+                  <label key={c.id} className="flex min-h-11 items-center gap-3 text-[15px]">
+                    <input
+                      type="checkbox"
+                      name="combinedWith"
+                      value={c.id}
+                      defaultChecked={d.combinedWith.includes(c.id)}
+                      className="h-5 w-5 accent-brand"
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </Field>
+            <Field label="Combined amount (HKD)" htmlFor="combinedTotal" hint="Total of the whole combined bill.">
+              <input id="combinedTotal" name="combinedTotal" inputMode="decimal" defaultValue={d.combinedTotal} className={inputCls} />
+            </Field>
+          </>
+        )}
         <Field label="Note" htmlFor="note">
           <input id="note" name="note" defaultValue={d.note} className={inputCls} />
         </Field>
