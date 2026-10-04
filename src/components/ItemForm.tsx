@@ -14,6 +14,7 @@ export type ItemDefaults = {
   category: string;
   type: ItemTypeName;
   autoRenew: boolean;
+  autoCharge: boolean;
   isSavings: boolean;
   paymentMethodId: string;
   notes: string;
@@ -103,8 +104,15 @@ export default function ItemForm({
         </label>
         <label className="flex min-h-11 items-center justify-between gap-3">
           <span>
+            <span className="block text-sm font-bold">Charged automatically</span>
+            <span className="text-xs text-muted">Paid by its card each cycle, no need to log payments</span>
+          </span>
+          <input type="checkbox" name="autoCharge" defaultChecked={d.autoCharge} className="h-5 w-5 accent-[#0B5D52]" />
+        </label>
+        <label className="flex min-h-11 items-center justify-between gap-3">
+          <span>
             <span className="block text-sm font-bold">Savings-type</span>
-            <span className="text-xs text-muted">Kept apart from spending totals (儲蓄, 年金)</span>
+            <span className="text-xs text-muted">Shown as its own bar on the Overview (儲蓄, 年金)</span>
           </span>
           <input type="checkbox" name="isSavings" defaultChecked={d.isSavings} className="h-5 w-5 accent-[#0B5D52]" />
         </label>

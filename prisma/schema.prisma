@@ -112,6 +112,7 @@ model Item {
   status          ItemStatus     @default(ACTIVE)
   isSavings       Boolean        @default(false) // 儲蓄 / 年金: shown apart from spending MRC
   autoRenew       Boolean        @default(false)
+  autoCharge      Boolean        @default(false) // charged to its card every cycle: charges count as paid without logging
   parentId        String? // riders and add-ons sit under their main item
   parent          Item?          @relation("ItemRiders", fields: [parentId], references: [id], onDelete: Cascade)
   riders          Item[]         @relation("ItemRiders")

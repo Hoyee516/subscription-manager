@@ -11,7 +11,7 @@ export default async function NewItemPage() {
       <BackBar href="/bills" label="Back to bills" />
       <h1 className="mb-4 px-1 text-[26px] font-extrabold tracking-tight">Add item</h1>
       <ItemForm
-        d={{ name: "", vendor: "", categoryGroup: "", category: "", type: "RECURRING", autoRenew: true, isSavings: false, paymentMethodId: "", notes: "" }}
+        d={{ name: "", vendor: "", categoryGroup: "", category: "", type: "RECURRING", autoRenew: true, autoCharge: false, isSavings: false, paymentMethodId: "", notes: "" }}
         methods={methods}
         groups={groups}
         categories={categories}

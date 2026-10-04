@@ -28,6 +28,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
             category: item.category,
             type: item.type as ItemTypeName,
             autoRenew: item.autoRenew,
+            autoCharge: item.autoCharge,
             isSavings: item.isSavings,
             paymentMethodId: item.paymentMethodId ?? "",
             notes: item.notes ?? "",

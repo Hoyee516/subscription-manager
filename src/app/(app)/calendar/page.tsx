@@ -145,14 +145,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                       key={i}
                       href={q({ d: day })}
                       aria-label={`${day} ${MONTHS[month.getUTCMonth()]}${os.length ? `, ${os.length} due` : ""}`}
-                      className={`flex h-[46px] flex-col items-center justify-center gap-1 rounded-[10px] text-sm font-semibold ${
+                      className={`flex h-[54px] flex-col items-center justify-center gap-1.5 rounded-[10px] text-sm font-semibold ${
                         isSel ? "bg-panel text-white" : isToday ? "border-2 border-ink" : ""
                       }`}
                     >
                       {day}
-                      <span className="flex h-1.5 gap-[3px]">
+                      <span className="flex h-2.5 gap-[3px]">
                         {cats.slice(0, 3).map((c) => (
-                          <span key={c} className="h-1.5 w-1.5 rounded-full" style={{ background: CATEGORY[c].color }} />
+                          <span key={c} className="h-2.5 w-2.5 rounded-full ring-1 ring-white" style={{ background: CATEGORY[c].color }} />
                         ))}
                       </span>
                     </Link>
@@ -162,7 +162,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               <div className="flex flex-wrap gap-x-3.5 gap-y-1 pt-1.5 text-xs text-muted">
                 {(["subs", "insurance", "home", "utility", "savings"] as Category[]).map((c) => (
                   <span key={c} className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ background: CATEGORY[c].color }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: CATEGORY[c].color }} />
                     {CATEGORY[c].label}
                   </span>
                 ))}

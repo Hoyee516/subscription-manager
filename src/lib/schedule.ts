@@ -7,12 +7,14 @@ import { toHkd } from "./fx";
 
 export type Category = "insurance" | "home" | "subs" | "utility" | "savings";
 
+// Calendar dot colours: a set checked to stay apart for normal and colour-blind vision
+// (the legend and the day list name each category, so colour is never the only cue).
 export const CATEGORY: Record<Category, { label: string; color: string }> = {
-  insurance: { label: "Insurance", color: "#C2410C" },
-  home: { label: "Home", color: "#4A6118" },
-  subs: { label: "Subs & telecom", color: "#0B5D52" },
-  utility: { label: "Utilities", color: "#1E4E8C" },
-  savings: { label: "Savings-type", color: "#4B3780" },
+  insurance: { label: "Insurance", color: "#E34948" },
+  home: { label: "Home", color: "#EDA100" },
+  subs: { label: "Subs & telecom", color: "#1BAF7A" },
+  utility: { label: "Utilities", color: "#2A78D6" },
+  savings: { label: "Savings-type", color: "#4A3AA7" },
 };
 
 export type Occurrence = {
@@ -164,7 +166,8 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
         sub: note ?? card,
         amount,
         estimate,
-        paid: kind === "charge" && paidNear(date, early),
+        // Auto-charged bills: a charge that has fallen due counts as paid without a logged payment.
+        paid: kind === "charge" && (paidNear(date, early) || (i.autoCharge && !estimate && date <= today)),
         kind,
         category: cat,
       });

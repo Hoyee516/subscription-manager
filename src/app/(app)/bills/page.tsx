@@ -112,6 +112,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         status: i.status,
         isSavings: i.isSavings,
         autoRenew: i.autoRenew,
+        autoCharge: i.autoCharge,
         ...amounts(t),
         cycle: t ? cycleLabel(t.cycleUnit as CycleUnitName, t.cycleCount) : "",
         card: i.paymentMethod?.label ?? null,
@@ -186,6 +187,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
                           <Pill>{r.isSavings ? "Savings" : TYPE_LABEL[r.type]}</Pill>
                           {r.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
+                          {r.autoCharge && <Pill tone="teal">Auto-charged</Pill>}
                           {r.status === "ACTIVE" && (r.card ? <Pill>{r.card}</Pill> : <Pill tone="orange">No card set</Pill>)}
                           {r.inPerson && <Pill tone="yellow">In person</Pill>}
                           {r.billPayment && <Pill tone="blue">Bill payment</Pill>}

@@ -105,6 +105,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             {item.categoryGroup} › {item.category}
           </Pill>
           {item.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
+          {item.autoCharge && <Pill tone="teal">Charged automatically</Pill>}
           {item.status !== "ACTIVE" && <Pill tone="blue">{item.status === "ENDED" ? "Ended" : "Cancelled"}</Pill>}
         </div>
         <h1 className="text-[26px] font-extrabold tracking-tight">{item.name}</h1>
@@ -257,7 +258,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                 )}
 
                 <div className="mt-2 flex gap-4">
-                  {type === "RECURRING" && t.id === latest?.id ? (
+                  {item.autoCharge ? (
+                    // Auto-charged: nothing to log each cycle; an extra or unusual charge can still be recorded.
+                    <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-muted">
+                      Log extra payment
+                    </Link>
+                  ) : type === "RECURRING" && t.id === latest?.id ? (
                     // Recurring: every cycle is a new payment on the current term.
                     <Link href={`/bills/${item.id}/terms/${t.id}/pay`} className="text-[13px] font-bold text-brand">
                       Log payment

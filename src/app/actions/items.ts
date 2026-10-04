@@ -55,6 +55,7 @@ function readItemFields(fd: FormData) {
     category,
     type: type as (typeof ITEM_TYPES)[number]["value"],
     autoRenew: fd.get("autoRenew") === "on",
+    autoCharge: fd.get("autoCharge") === "on",
     isSavings: fd.get("isSavings") === "on",
     notes: optStr(fd, "notes"),
   };
