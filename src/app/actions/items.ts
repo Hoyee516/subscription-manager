@@ -331,10 +331,11 @@ type PaymentFill = {
 };
 
 /**
- * Links a payment with the partner bills' payments on the same date (both ways),
- * so opening any of them shows the same combined bill. A partner with no payment
- * on that date gets one created with the same date, card, channel and note, and
- * its own share as the amount. Returns names whose share couldn't be worked out.
+ * Links a payment with the partner bills' payments (both ways), so opening any of
+ * them shows the same combined bill. Partners already in the combined bill are
+ * kept in step with this payment's date, card, channel and note. Otherwise a
+ * partner's payment on the same date is linked, or one is created with its own
+ * share as the amount. Returns names whose share couldn't be worked out.
  */
 async function linkBatch(
   paymentId: string,
@@ -359,6 +360,20 @@ async function linkBatch(
   const found: { id: string; batchId: string | null }[] = [];
   const toCreate: { itemId: string; name: string; termId: string; share: number | null }[] = [];
   for (const it of partners) {
+    // Already in this combined bill: keep it in step (date, card, channel, note), amount untouched.
+    // Matching by membership, not date, so changing the date moves the whole combined bill.
+    const member = current.batchId
+      ? await prisma.payment.findFirst({ where: { batchId: current.batchId, term: { itemId: it.id } }, select: { id: true, batchId: true } })
+      : null;
+    if (member) {
+      await prisma.payment.update({
+        where: { id: member.id },
+        data: { paidAt: fill.paidAt, paymentMethodId: fill.paymentMethodId, channel: fill.channel, note: fill.note },
+      });
+      found.push(member);
+      continue;
+    }
+    // Not linked yet: an existing payment on the same date is linked as is.
     const p = await prisma.payment.findFirst({
       where: { paidAt: fill.paidAt, term: { itemId: it.id } },
       select: { id: true, batchId: true },
