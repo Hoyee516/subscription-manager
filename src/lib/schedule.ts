@@ -52,7 +52,7 @@ export const termHkd = (t: TermRow) =>
   toHkd(Number(t.amount), t.currency, t.amountHkd ? Number(t.amountHkd) : null).hkd;
 
 /** Months covered by one charge of this term. */
-function cycleMonths(t: TermRow): number {
+export function cycleMonths(t: TermRow): number {
   const c = Math.max(1, t.cycleCount);
   switch (t.cycleUnit as CycleUnitName) {
     case "MONTH":

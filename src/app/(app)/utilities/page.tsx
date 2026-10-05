@@ -12,6 +12,9 @@ import { utilityTarget } from "@/lib/remind";
 import { calendarConfigured } from "@/lib/gcal";
 
 const ym = (d: Date) => d.toISOString().slice(0, 7); // "2026-10"
+// Order of the utility buttons; any other utility follows, A–Z.
+const ORDER = ["Electricity", "Water", "Rates & Gov Rent"];
+const rank = (name: string) => (ORDER.includes(name) ? ORDER.indexOf(name) : ORDER.length);
 const cycleText = (m: number) => (m === 1 ? "monthly" : m === 3 ? "quarterly" : `every ${m} months`);
 
 export default async function UtilitiesPage({ searchParams }: { searchParams: Promise<{ u?: string }> }) {
@@ -21,13 +24,13 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
   const thisMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   const yearAgo = addMonths(thisMonth, -12);
 
-  const utilities = await prisma.utility.findMany({
+  const utilities = (await prisma.utility.findMany({
     where: { userId, isActive: true },
     orderBy: { name: "asc" },
     include: {
       bills: { orderBy: { periodStart: "desc" }, include: { paymentMethod: { select: { label: true } } } },
     },
-  });
+  })).sort((a, b) => rank(a.name) - rank(b.name));
   if (utilities.length === 0) {
     return <PageHeader title="Utilities" sub="No utilities yet" />;
   }

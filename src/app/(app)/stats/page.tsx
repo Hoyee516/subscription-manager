@@ -8,6 +8,9 @@ import PageHeader from "@/components/PageHeader";
 import StackedBars, { type Series } from "@/components/stats/StackedBars";
 import HBars from "@/components/stats/HBars";
 import IndexLines from "@/components/stats/IndexLines";
+import PriceBars from "@/components/stats/PriceBars";
+import StepLines from "@/components/stats/StepLines";
+import YearBars from "@/components/stats/YearBars";
 import { Card, SectionLabel } from "@/components/ui";
 
 const TABS = [
@@ -85,6 +88,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
         )}
 
         {tab === "prices" && (
+          <>
           <Question
             label="Premium growth"
             q="How fast are my insurance prices rising?"
@@ -96,6 +100,31 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
               <p className="text-sm text-muted">Needs policies with at least 3 years of premiums.</p>
             )}
           </Question>
+          <Question
+            label="Software & more"
+            q="What does each subscription cost a year, and has it gone up?"
+            why="Today's price over a year, in HKD. Passes count what was paid in the last 12 months; prepaid plans are spread over their term. A rise since the first price shows in orange. Tap a bill for details."
+          >
+            {s.subscriptions.length ? <PriceBars rows={s.subscriptions} /> : <p className="text-sm text-muted">No subscriptions yet.</p>}
+          </Question>
+          <Question label="Telecom" q="Is each contract getting cheaper or dearer?" why="Monthly price of each contract, in HKD. Each step is a new contract.">
+            {s.telecom.length ? (
+              <StepLines
+                today={today}
+                series={s.telecom.slice(0, 6).map((t, k) => ({ key: t.id, name: t.name, color: LINE_COLORS[k], steps: t.steps }))}
+              />
+            ) : (
+              <p className="text-sm text-muted">No telecom bills yet.</p>
+            )}
+          </Question>
+          <Question
+            label="Tax"
+            q="How much salaries tax each year?"
+            why="Total bill per year of assessment (1 Apr – 31 Mar), all instalments together. A lighter bar isn't fully paid yet."
+          >
+            {s.tax.length ? <YearBars rows={s.tax} color={CATEGORY.tax.color} /> : <p className="text-sm text-muted">No tax bills yet.</p>}
+          </Question>
+          </>
         )}
 
         {tab === "mortgage" &&

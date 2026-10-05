@@ -63,7 +63,7 @@ export default function TermForm({
           <div>
             <SectionLabel>Riders</SectionLabel>
             <p className="mt-1 text-xs text-muted">
-              Term start, end, payment due and cycle above apply to riders too. Leave a rider&apos;s amount blank to leave it unchanged.
+              Term start, end, payment due and cycle above apply to riders too. {termId ? "Leave a rider's amount blank to leave it unchanged." : "Enter each rider's amount; leave it blank if the rider isn't renewing."}
             </p>
           </div>
           {riders.map((r) => (

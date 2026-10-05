@@ -9,7 +9,8 @@ import TermForm from "@/components/TermForm";
 import { emptyTerm } from "@/components/TermFields";
 import { BackBar } from "@/components/ui";
 
-// New term, prefilled from the latest one: same price, cycle, payment due rule and notes.
+// New term, prefilled from the latest one: same currency, cycle, payment due rule and notes,
+// with the amounts left blank to enter.
 // It starts the day after the last one ends (or one cycle later for open-ended terms) and
 // runs for the same length. Recurring bills: starts at the next charge (a price change mid-way).
 export default async function NewTermPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,7 +30,8 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
     },
   });
   if (!item) notFound();
-  const riders = await getRiderTermRows(userId, id, null);
+  // Amounts are never carried over: each new term's price is entered fresh (riders too).
+  const riders = (await getRiderTermRows(userId, id, null)).map((r) => ({ ...r, amount: "", amountHkd: "" }));
   // Instalments: same due dates a year later, amounts left for the new bill.
   const lastInst = item.terms[0]?.instalments ?? [];
   const instalments =
@@ -40,7 +42,7 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
   const last = item.terms[0];
   let d = emptyTerm;
   if (last) {
-    const base = termToDefaults(last);
+    const base = { ...termToDefaults(last), amount: "", amountHkd: "" };
     const unit = last.cycleUnit as CycleUnitName;
     if (item.type === "RECURRING") {
       // A price change: the new term starts at the next charge not yet paid and keeps the
@@ -75,7 +77,7 @@ export default async function NewTermPage({ params }: { params: Promise<{ id: st
       <h1 className="px-1 text-[26px] font-extrabold tracking-tight">New term</h1>
       <p className="mb-4 px-1 text-[13px] text-muted">
         {item.name}
-        {riders.length > 0 && ` + rider ${riders.map((r) => r.name).join(", ")}`} · prefilled from the last term — change anything that differs
+        {riders.length > 0 && ` + rider ${riders.map((r) => r.name).join(", ")}`} · prefilled from the last term — enter the amount, and change anything else that differs
       </p>
       <TermForm itemId={id} termId={null} itemType={item.type} d={d} riders={riders} instalments={instalments} />
     </>

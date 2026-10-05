@@ -1,14 +1,19 @@
 // Statistics page data: what was actually paid (history), biggest bills and per-card load
-// (now), insurance premium growth (prices) and the mortgage principal/interest split.
+// (now), price analysis (insurance premium growth, subscriptions, telecom contracts, tax) and the
+// mortgage principal/interest split.
 import { prisma } from "./prisma";
-import { addMonths } from "./dates";
+import { addDays, addMonths, daysBetween } from "./dates";
+import { money } from "./billing";
+import { termChargeDate } from "./due";
 import {
   categoryOf,
+  cycleMonths,
   isLapsed,
   itemMonthly,
   loadData,
   methodOf,
   occurrences,
+  termHkd,
   utilityMonthly,
   type Category,
 } from "./schedule";
@@ -95,6 +100,66 @@ export async function loadStats(userId: string, today: Date) {
     .filter((g) => g.points.length >= 3)
     .sort((a, b) => b.points[b.points.length - 1].index - a.points[a.points.length - 1].index);
 
+  // 8 · Software & more (same grouping as the Bills filter): today's price over a year, and the
+  // change from the bill's first price (same currency and cycle). Passes count what was paid in
+  // the last 12 months; prepaid plans are spread over their term; trials are left out.
+  const subscriptions = data.items
+    .filter((i) => !["Home", "Tax", "Insurance", "Telecom"].includes(i.categoryGroup) && i.type !== "TRIAL" && !i.parentId)
+    .map((i) => {
+      const terms = i.terms.filter((t) => t.startDate <= today && Number(t.amount) > 0);
+      if (!terms.length) return null;
+      const first = terms[0];
+      const last = terms[terms.length - 1];
+      const comparable = terms.length > 1 && first.currency === last.currency && first.cycleUnit === last.cycleUnit && first.cycleCount === last.cycleCount;
+      const pct = comparable ? (Number(last.amount) / Number(first.amount) - 1) * 100 : null;
+      const price = money(Number(last.amount), last.currency);
+      let perYear: number;
+      let detail: string;
+      if (i.type === "PASS") {
+        const recent = terms.filter((t) => termChargeDate(t) > addDays(today, -365));
+        perYear = recent.reduce((sum, t) => sum + (termHkd(t) ?? 0), 0);
+        detail = `${recent.length} ${recent.length === 1 ? "pass" : "passes"} in the last 12 months · ${price} each`;
+      } else {
+        if (isLapsed(i, today)) return null;
+        perYear = itemMonthly(i, today) * 12;
+        detail =
+          last.cycleUnit === "ONCE"
+            ? `${price} prepaid for ${last.endDate ? Math.round(daysBetween(last.startDate, last.endDate) / 30.4375) : "?"} months`
+            : `${price} a ${last.cycleCount > 1 ? `${last.cycleCount} ${last.cycleUnit.toLowerCase()}s` : last.cycleUnit.toLowerCase()}`;
+      }
+      if (!(perYear > 0)) return null;
+      const since = String(first.startDate.getUTCFullYear());
+      const change = pct === null ? `first price ${since}` : pct > 0.5 ? `+${pct.toFixed(0)}% since ${since}` : pct < -0.5 ? `−${Math.abs(pct).toFixed(0)}% since ${since}` : `no change since ${since}`;
+      return { id: i.id, name: i.name, perYear, pct, detail: `${detail} · ${change}` };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.perYear - a.perYear);
+
+  // 9 · Telecom: monthly price (HKD) of each contract over time; each term is a step.
+  const telecom = data.items
+    .filter((i) => i.categoryGroup === "Telecom" && !i.parentId && i.terms.length)
+    .map((i) => ({
+      id: i.id,
+      name: i.name,
+      steps: i.terms
+        .map((t) => ({ start: t.startDate, end: t.endDate, monthly: (termHkd(t) ?? 0) / cycleMonths(t) }))
+        .filter((t) => t.monthly > 0),
+    }))
+    .filter((t) => t.steps.length);
+
+  // 10 · Tax: total bill per year of assessment (term start = 1 Apr), all instalments together.
+  const taxYears = new Map<number, { total: number; paid: number }>();
+  for (const i of data.items.filter((x) => x.categoryGroup === "Tax"))
+    for (const t of i.terms) {
+      const y = t.startDate.getUTCFullYear() - (t.startDate.getUTCMonth() < 3 ? 1 : 0);
+      const cur = taxYears.get(y) ?? { total: 0, paid: 0 };
+      taxYears.set(y, { total: cur.total + (termHkd(t) ?? 0), paid: cur.paid + t.payments.reduce((sum, p) => sum + Number(p.amountHkd), 0) });
+    }
+  const tax = [...taxYears.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .filter(([, v]) => v.total > 0)
+    .map(([y, v]) => ({ label: `${y}/${String((y + 1) % 100).padStart(2, "0")}`, total: v.total, paid: v.paid >= v.total - 1 }));
+
   // 7 · Mortgage: principal / interest from the payment notes ("Principal 19,851.48 · Interest 12,793.02 · … · Balance after 6,120,802.17")
   const mortgage = await prisma.item.findFirst({
     where: { userId, name: { contains: "mortgage", mode: "insensitive" } },
@@ -116,6 +181,6 @@ export async function loadStats(userId: string, today: Date) {
     .sort((a, b) => a[0] - b[0])
     .map(([y, v]) => ({ label: String(y), parts: { principal: v.principal, interest: v.interest } }));
 
-  return { byYear, byMonth, biggest, byMethod, growth, mortgage: mortgage ? { name: mortgage.name, years: mortgageYears, balance } : null };
+  return { byYear, byMonth, biggest, byMethod, growth, subscriptions, telecom, tax, mortgage: mortgage ? { name: mortgage.name, years: mortgageYears, balance } : null };
 }
 
