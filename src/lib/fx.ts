@@ -1,7 +1,8 @@
-// HKD conversion for display. HKD is pegged to USD (7.75–7.85), so a fixed rate
-// is used instead of a live lookup. Manually entered HKD amounts always win.
+// HKD conversion for display. Fixed rates instead of a live lookup: HKD is pegged to
+// USD (7.75–7.85); GBP is the market rate on 5 Oct 2026 (10.366), rounded.
+// Manually entered HKD amounts always win.
 
-const RATE_TO_HKD: Record<string, number> = { HKD: 1, USD: 7.8 };
+const RATE_TO_HKD: Record<string, number> = { HKD: 1, USD: 7.8, GBP: 10.37 };
 
 /**
  * HKD figure for a term amount: the vendor's quoted HKD amount if recorded,

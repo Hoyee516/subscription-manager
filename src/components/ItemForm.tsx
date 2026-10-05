@@ -105,7 +105,7 @@ export default function ItemForm({
         <label className="flex min-h-11 items-center justify-between gap-3">
           <span>
             <span className="block text-sm font-bold">Charged automatically</span>
-            <span className="text-xs text-muted">Paid by its card each cycle, no need to log payments</span>
+            <span className="text-xs text-muted">Paid by its card each cycle: no need to log payments, and no Google Calendar reminder (in-app alerts still show)</span>
           </span>
           <input type="checkbox" name="autoCharge" defaultChecked={d.autoCharge} className="h-5 w-5 accent-[#0B5D52]" />
         </label>
@@ -121,7 +121,7 @@ export default function ItemForm({
       {isNew && (
         <Card className="flex flex-col gap-3.5">
           <SectionLabel>First term</SectionLabel>
-          <TermFields d={emptyTerm} />
+          <TermFields d={emptyTerm} itemType={type} />
         </Card>
       )}
 

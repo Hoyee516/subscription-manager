@@ -13,12 +13,14 @@ export type RiderTermRow = { itemId: string; name: string; termId: string; amoun
 export default function TermForm({
   itemId,
   termId,
+  itemType,
   d,
   riders = [],
   instalments,
 }: {
   itemId: string;
   termId: string | null;
+  itemType: string;
   d: TermDefaults;
   riders?: RiderTermRow[];
   instalments?: InstalmentRow[]; // shown only for bills that use instalments (or have them)
@@ -34,7 +36,7 @@ export default function TermForm({
       }}
     >
       <Card className="flex flex-col gap-3.5">
-        <TermFields d={d} />
+        <TermFields d={d} itemType={itemType} allowInstalments={!!instalments} />
       </Card>
       {instalments && (
         <Card className="flex flex-col gap-3">
@@ -88,7 +90,7 @@ export default function TermForm({
                 <input
                   name={`riderHkd_${r.itemId}`}
                   inputMode="decimal"
-                  placeholder="If billed in USD"
+                  placeholder="If not billed in HKD"
                   defaultValue={r.amountHkd}
                   className={inputCls}
                 />

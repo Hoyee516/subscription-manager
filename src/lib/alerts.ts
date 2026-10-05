@@ -1,9 +1,10 @@
-// Needs attention: the 10 alert kinds, worked out fresh from the data each time Home opens
+// Needs attention: the 11 alert kinds, worked out fresh from the data each time Home opens
 // (so fixing the cause clears an alert at once). The Alert table only remembers what you
 // dismissed, plus calendar-sync failures written by the sync.
 import { prisma } from "./prisma";
-import { addDays, addMonths, fmtDay, fmtMonth } from "./dates";
+import { addDays, addMonths, daysBetween, fmtDay, fmtMonth } from "./dates";
 import { money } from "./billing";
+import { nextCycleCharge } from "./due";
 import { isLapsed, methodOf, occurrences, priceHikes, termHkd, type LoadedData } from "./schedule";
 import type { PillTone } from "@/components/ui";
 
@@ -13,6 +14,7 @@ export type AlertKind =
   | "TRIAL_ENDING"
   | "AUTO_RENEWAL"
   | "CONTRACT_ENDING"
+  | "DUE_SOON"
   | "CARD_EXPIRING"
   | "NO_CARD"
   | "BILL_TO_RECORD"
@@ -37,6 +39,7 @@ const ORDER: AlertKind[] = [
   "TRIAL_ENDING",
   "AUTO_RENEWAL",
   "CONTRACT_ENDING",
+  "DUE_SOON",
   "BILL_TO_RECORD",
   "NO_CARD",
   "UTILITY_MISSING",
@@ -60,6 +63,10 @@ export function cardExpiry(m: { expiryMonth: number | null; expiryYear: number |
 }
 export const expText = (m: { expiryMonth: number | null; expiryYear: number | null }) =>
   `${String(m.expiryMonth).padStart(2, "0")}/${String(m.expiryYear).slice(-2)}`;
+
+/** Passes that are memberships (e.g. a cinema membership) are named as such in alerts. */
+const isMembership = (i: { name: string; category: string; categoryGroup: string }) =>
+  /member|會員|cinema|戲院|電影/i.test(`${i.name} ${i.category} ${i.categoryGroup}`);
 
 export function computeAlerts(data: LoadedData, methods: Method[], today: Date): AlertView[] {
   const out: AlertView[] = [];
@@ -149,30 +156,56 @@ export function computeAlerts(data: LoadedData, methods: Method[], today: Date):
         date: end,
       });
 
-    // 4 / 5 · Term ending within 30 days: auto-renewal (chance to cancel) or contract ending (re-sign or let lapse)
-    if (["CONTRACT", "POLICY", "PREPAID"].includes(i.type) && end && end >= today && end <= addDays(today, 30)) {
-      const what = i.type === "POLICY" ? "Policy" : i.type === "PREPAID" ? "Plan" : "Contract";
+    // 4 / 5 · Renewal decision, 30 and 7 days ahead: a term ending (contract, policy, prepaid plan,
+    // pass or membership), or a subscription billed yearly or longer renewing. Monthly subscriptions
+    // get no decision alert (it would come every month); their charges show under Due soon.
+    const yearly = last && (last.cycleUnit === "YEAR" || (last.cycleUnit === "MONTH" && last.cycleCount >= 12));
+    const decision: { at: Date; renewsOn: Date; auto: boolean } | null =
+      ["CONTRACT", "POLICY", "PREPAID", "PASS"].includes(i.type) && end
+        ? { at: end, renewsOn: addDays(end, 1), auto: i.autoRenew }
+        : i.type === "RECURRING" && yearly && !end
+          ? (() => {
+              const d = nextCycleCharge(last, today);
+              return d ? { at: d, renewsOn: d, auto: true } : null;
+            })()
+          : null;
+    if (decision && decision.at >= today && decision.at <= addDays(today, 30)) {
+      const what =
+        i.type === "POLICY"
+          ? "Policy"
+          : i.type === "PREPAID"
+            ? "Plan"
+            : i.type === "PASS"
+              ? isMembership(i)
+                ? "Membership"
+                : "Pass"
+              : i.type === "RECURRING"
+                ? "Subscription"
+                : "Contract";
+      // The 7-day reminder has its own key, so dismissing the 30-day one doesn't hide it.
+      const stage = decision.at <= addDays(today, 7) ? ":7" : "";
+      const when = inDays(decision.renewsOn, today);
       out.push(
-        i.autoRenew
+        decision.auto
           ? {
-              key: `AUTO_RENEWAL:${i.id}:${ymd(end)}`,
+              key: `AUTO_RENEWAL:${i.id}:${ymd(decision.at)}${stage}`,
               type: "AUTO_RENEWAL",
-              title: `${i.name} renews ${fmtDay(addDays(end, 1))}`,
-              sub: `${what} auto-renews${price ? ` at about ${money(r0(price))}` : ""} · cancel before then if not wanted`,
+              title: `${i.name} renews ${fmtDay(decision.renewsOn)}`,
+              sub: `${when[0].toUpperCase()}${when.slice(1)}${price ? ` · about ${money(r0(price))}` : ""} · cancel before then if not required`,
               pill: "Auto-renewal",
               tone: "pink",
               href: `/bills/${i.id}`,
-              date: end,
+              date: decision.at,
             }
           : {
-              key: `CONTRACT_ENDING:${i.id}:${ymd(end)}`,
+              key: `CONTRACT_ENDING:${i.id}:${ymd(decision.at)}${stage}`,
               type: "CONTRACT_ENDING",
-              title: `${i.name} ends ${fmtDay(end)}`,
-              sub: `${what} doesn't auto-renew · re-sign or let it end`,
+              title: `${i.name} ends ${fmtDay(decision.at)}`,
+              sub: `${what} doesn't auto-renew · renew or let it end`,
               pill: `${what} ending`,
               tone: "purple",
               href: `/bills/${i.id}`,
-              date: end,
+              date: decision.at,
             }
       );
     }
@@ -190,6 +223,27 @@ export function computeAlerts(data: LoadedData, methods: Method[], today: Date):
         href: `/bills/${i.parentId ?? i.id}/edit`,
         date: today,
       });
+  }
+
+  // 10 · Due soon: charges you pay yourself 3 days and 1 day ahead; auto-pay charges 1 day ahead,
+  // as a heads-up that the card will be charged. Each stage has its own key, so dismissing the
+  // 3-day one doesn't hide the 1-day one. Utility bills have their own Unpaid alert.
+  for (const o of occurrences(data, today, addDays(today, 3), today)) {
+    if (o.kind !== "charge" || o.paid || o.key.startsWith("u-")) continue;
+    const days = daysBetween(today, o.date);
+    if (days > (o.autoCharge ? 1 : 3)) continue;
+    const when = inDays(o.date, today);
+    const amount = o.amount != null ? `${o.estimate ? "≈" : ""}${money(o.estimate ? r0(o.amount) : o.amount)} · ` : "";
+    out.push({
+      key: `DUE_SOON:${o.key}:${days <= 1 ? 1 : 3}`,
+      type: "DUE_SOON",
+      title: o.autoCharge ? `${o.name} · charged ${fmtDay(o.date)}` : `${o.name} · due ${fmtDay(o.date)}`,
+      sub: `${when[0].toUpperCase()}${when.slice(1)} · ${amount}${o.autoCharge && !o.estimate ? `charged to ${o.sub}` : o.sub}`,
+      pill: o.autoCharge ? "Auto-pay" : days === 0 ? "Due today" : days === 1 ? "Due tomorrow" : `Due in ${days} days`,
+      tone: o.autoCharge ? "blue" : "yellow",
+      href: o.href,
+      date: o.date,
+    });
   }
 
   // 8 · Not logged: a charge 3+ days past due with no payment (last 90 days, auto-charged bills excluded)
@@ -268,6 +322,7 @@ const PILL_OF: Partial<Record<AlertKind, string>> = {
   TRIAL_ENDING: "Trial ending",
   AUTO_RENEWAL: "Auto-renewal",
   CONTRACT_ENDING: "Ending",
+  DUE_SOON: "Due soon",
   CARD_EXPIRING: "Card expiring",
   NO_CARD: "No card",
   BILL_TO_RECORD: "Not logged",

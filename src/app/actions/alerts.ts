@@ -12,6 +12,7 @@ const KINDS: AlertKind[] = [
   "TRIAL_ENDING",
   "AUTO_RENEWAL",
   "CONTRACT_ENDING",
+  "DUE_SOON",
   "CARD_EXPIRING",
   "NO_CARD",
   "BILL_TO_RECORD",

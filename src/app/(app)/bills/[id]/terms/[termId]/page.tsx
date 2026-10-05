@@ -12,7 +12,7 @@ export default async function EditTermPage({ params }: { params: Promise<{ id: s
   const term = await prisma.term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
     include: {
-      item: { select: { name: true, categoryGroup: true } },
+      item: { select: { name: true, categoryGroup: true, type: true } },
       instalments: { orderBy: { dueDate: "asc" } },
     },
   });
@@ -32,7 +32,7 @@ export default async function EditTermPage({ params }: { params: Promise<{ id: s
         {term.item.name}
         {riders.length > 0 && ` + rider ${riders.map((r) => r.name).join(", ")}`}
       </p>
-      <TermForm itemId={id} termId={termId} d={termToDefaults(term)} riders={riders} instalments={instalments} />
+      <TermForm itemId={id} termId={termId} itemType={term.item.type} d={termToDefaults(term)} riders={riders} instalments={instalments} />
     </>
   );
 }

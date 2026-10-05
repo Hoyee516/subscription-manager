@@ -76,3 +76,13 @@ After pulling this change:
 ```bash
 npx prisma db push && npx prisma generate && npx tsx --env-file=.env prisma/fixes/2026-10-03-item-card.ts
 ```
+
+### Payment due rules (5 Oct 2026)
+
+Each term now has a **Payment due** rule (same as start date, fixed day each month, fixed date each year, specific date, or instalments) that decides when every charge falls. The fix script sets the rules agreed on 5 Oct 2026, corrects Claude Pro to £18 on every term, and switches Google Calendar reminders off for auto-pay bills (their calendar events are removed at the next sync).
+
+```bash
+npx prisma db push && npx prisma generate && npx tsx --env-file=.env prisma/fixes/2026-10-05-due-rules.ts --dry
+```
+
+Check the list it prints, then run it again without `--dry` to apply. Safe to re-run.

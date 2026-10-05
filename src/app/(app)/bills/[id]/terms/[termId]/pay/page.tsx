@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { fmtDay, isoDay, todayHK } from "@/lib/dates";
 import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
-import { money, nextInstalment, type CycleUnitName } from "@/lib/billing";
+import { money, nextInstalment } from "@/lib/billing";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
 
@@ -33,7 +33,7 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const recurring = term.item.type === "RECURRING";
   const prefillAmount = recurring ? fullHkd : left;
   const prefillDate = recurring
-    ? nextInstalment(term.startDate, term.cycleUnit as CycleUnitName, term.cycleCount, term.payments[0]?.paidAt ?? null)
+    ? nextInstalment(term, term.payments[0]?.paidAt ?? null)
     : todayHK();
 
   return (

@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { addDays, addMonths, daysBetween } from "./dates";
 import { stepCycle, type CycleUnitName, type ItemTypeName } from "./billing";
 import { toHkd } from "./fx";
+import { cycleChargeDates, termChargeDate } from "./due";
 
 export type Category = "insurance" | "home" | "tax" | "subs" | "utility" | "savings";
 
@@ -37,6 +38,9 @@ type TermRow = {
   startDate: Date;
   endDate: Date | null;
   dueDate: Date | null;
+  dueRule?: string | null;
+  dueDay?: number | null;
+  dueMonth?: number | null;
   amount: { toString(): string };
   currency: string;
   amountHkd: { toString(): string } | null;
@@ -195,11 +199,9 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
       const unit = t.cycleUnit as CycleUnitName;
 
       if ((type === "RECURRING" || type === "CONTRACT") && unit !== "ONCE") {
-        // One charge per cycle from the term start until the next term (or the term/contract end).
+        // One charge per cycle, on the term's payment due rule, until the next term (or the term/contract end).
         const stop = next ? addDays(next.startDate, -1) : t.endDate ?? to;
-        for (let d = t.startDate, n = 0; d <= stop && d <= to && n < 2000; d = stepCycle(d, unit, t.cycleCount), n++) {
-          push(d, hkd, false, "charge", undefined, unit === "YEAR" ? 45 : 10);
-        }
+        for (const d of cycleChargeDates(t, stop < to ? stop : to)) push(d, hkd, false, "charge", undefined, unit === "YEAR" ? 45 : 10);
         if (isLast && type === "CONTRACT" && t.endDate) push(t.endDate, null, false, "ends", "Contract ends");
         return;
       }
@@ -213,16 +215,16 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
       }
 
       // POLICY / PREPAID / PASS / TRIAL / one-off terms: one charge per term.
-      const due = t.dueDate ?? t.startDate;
-      if (hkd) push(due, hkd, false, "charge");
+      if (hkd) push(termChargeDate(t), hkd, false, "charge");
       if (!isLast) return;
       if (type === "TRIAL" && t.endDate) push(t.endDate, null, false, "ends", "Trial ends — cancel or it converts");
       else if (type === "PASS" && t.endDate) push(t.endDate, null, false, "ends", "Pass ends");
       else if ((type === "POLICY" || (type === "PREPAID" && i.autoRenew)) && t.endDate) {
         // Next renewal(s) not entered yet: estimate from the current price.
         const len = unit === "ONCE" ? null : unit;
-        for (let d = addDays(t.endDate, 1), n = 0; d <= to && n < 50; n++) {
-          push(d, hkd, true, "charge", `Estimate · renewal not entered yet · ${card}`);
+        // Each estimated term falls due by the same rule as the current one (Bupa: 23 Jul before a 1 Aug start).
+        for (let d = addDays(t.endDate, 1), n = 0; d <= addDays(to, 400) && n < 50; n++) {
+          push(termChargeDate({ ...t, startDate: d, dueDate: null }), hkd, true, "charge", `Estimate · renewal not entered yet · ${card}`);
           d = len ? stepCycle(d, len, t.cycleCount) : addDays(d, daysBetween(t.startDate, t.endDate) + 1);
         }
       }

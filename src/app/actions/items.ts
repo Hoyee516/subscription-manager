@@ -5,7 +5,8 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
-import { CHANNELS, CYCLE_UNITS, ITEM_TYPES } from "@/lib/billing";
+import { CHANNELS, CURRENCIES, CYCLE_UNITS, ITEM_TYPES } from "@/lib/billing";
+import { rulesFor, type DueRuleName } from "@/lib/due";
 import { deleteItemEvents, syncLater } from "@/lib/remind";
 
 export type ActionResult = { ok: true; id?: string; warning?: string } | { ok: false; error: string };
@@ -62,6 +63,36 @@ function readItemFields(fd: FormData) {
   };
 }
 
+/** Auto-pay bills get no Google Calendar reminder: ticking "Charged automatically" switches it off. */
+const remindOff = (autoCharge: boolean) => (autoCharge ? { remind: false } : {});
+
+type DueFields = { dueRule: DueRuleName; dueDay: number | null; dueMonth: number | null; dueDate: Date | null };
+
+/** "Payment due" rule: only the inputs the rule uses are kept. Returns an error message if incomplete. */
+function readDueRule(fd: FormData, cycleUnit: string): DueFields | string {
+  const dueRule = (str(fd, "dueRule") || "START_DATE") as DueRuleName;
+  if (!rulesFor(cycleUnit, true).includes(dueRule)) return "Pick a payment due option that fits the cycle.";
+  const day = parseInt(str(fd, "dueDay"), 10);
+  const month = parseInt(str(fd, "dueMonth"), 10);
+  const none: DueFields = { dueRule, dueDay: null, dueMonth: null, dueDate: null };
+  switch (dueRule) {
+    case "DAY_OF_MONTH":
+      if (!(day >= 1 && day <= 31)) return "Pick the day of the month the payment is due.";
+      return { ...none, dueDay: day };
+    case "DAY_OF_YEAR":
+      if (!(month >= 1 && month <= 12) || !(day >= 1 && day <= new Date(Date.UTC(2024, month, 0)).getUTCDate()))
+        return "Pick the month and day the payment is due each year.";
+      return { ...none, dueDay: day, dueMonth: month };
+    case "FIXED_DATE": {
+      const dueDate = parseDay(fd.get("dueDate"));
+      if (!dueDate) return "Pick the date the payment is due.";
+      return { ...none, dueDate };
+    }
+    default:
+      return none;
+  }
+}
+
 function readTermFields(fd: FormData) {
   const startDate = parseDay(fd.get("startDate"));
   const amount = decimal(fd, "amount");
@@ -70,12 +101,15 @@ function readTermFields(fd: FormData) {
   const endDate = parseDay(fd.get("endDate"));
   if (endDate && endDate < startDate) return null;
   const cycleCount = Math.max(1, parseInt(str(fd, "cycleCount") || "1", 10) || 1);
+  const due = readDueRule(fd, cycleUnit);
+  if (typeof due === "string") return { error: due };
+  const currency = str(fd, "currency");
   return {
     startDate,
     endDate,
-    dueDate: parseDay(fd.get("dueDate")),
+    ...due,
     amount,
-    currency: str(fd, "currency") || "HKD",
+    currency: CURRENCIES.includes(currency as (typeof CURRENCIES)[number]) ? currency : "HKD",
     amountHkd: decimal(fd, "amountHkd"),
     cycleUnit: cycleUnit as (typeof CYCLE_UNITS)[number]["value"],
     cycleCount,
@@ -89,10 +123,11 @@ export async function createItem(fd: FormData): Promise<ActionResult> {
   if (!item) return fail("Fill in name, vendor, category and billing type.");
   const term = readTermFields(fd);
   if (!term) return fail("Fill in the first term: start date, amount and cycle (end date can't be before start).");
+  if ("error" in term) return fail(term.error ?? "Check the payment due fields.");
   const paymentMethodId = await ownMethod(userId, optStr(fd, "paymentMethodId"));
 
   const created = await prisma.item.create({
-    data: { ...item, userId, paymentMethodId, terms: { create: term } },
+    data: { ...item, ...remindOff(item.autoCharge), userId, paymentMethodId, terms: { create: term } },
   });
   revalidatePath("/bills");
   syncLater(userId);
@@ -105,7 +140,7 @@ export async function updateItem(itemId: string, fd: FormData): Promise<ActionRe
   const item = readItemFields(fd);
   if (!item) return fail("Fill in name, vendor, category and billing type.");
   const paymentMethodId = await ownMethod(userId, optStr(fd, "paymentMethodId"));
-  await prisma.item.update({ where: { id: itemId }, data: { ...item, paymentMethodId } });
+  await prisma.item.update({ where: { id: itemId }, data: { ...item, ...remindOff(item.autoCharge), paymentMethodId } });
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
   syncLater(userId);
@@ -139,6 +174,7 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
   if (!(await ownItem(userId, itemId))) return fail("Item not found.");
   const term = readTermFields(fd);
   if (!term) return fail("Check start date, amount and cycle (end date can't be before start).");
+  if ("error" in term) return fail(term.error ?? "Check the payment due fields.");
 
   // Optional instalments (inst_due_N + inst_amt_N): rows with both a date and an amount.
   const instalments: { dueDate: Date; amountHkd: Prisma.Decimal }[] = [];
@@ -180,6 +216,9 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
       startDate: term.startDate,
       endDate: term.endDate,
       dueDate: term.dueDate,
+      dueRule: term.dueRule,
+      dueDay: term.dueDay,
+      dueMonth: term.dueMonth,
       cycleUnit: term.cycleUnit,
       cycleCount: term.cycleCount,
       amount,
@@ -508,7 +547,9 @@ export async function deletePayment(paymentId: string): Promise<ActionResult> {
 export async function saveRemind(target: { itemId: string } | { utilityId: string }, remind: boolean): Promise<ActionResult> {
   const userId = await requireUserId();
   if ("itemId" in target) {
-    if (!(await ownItem(userId, target.itemId))) return fail("Item not found.");
+    const it = await prisma.item.findFirst({ where: { id: target.itemId, userId }, select: { autoCharge: true } });
+    if (!it) return fail("Item not found.");
+    if (remind && it.autoCharge) return fail("Auto-pay bills don't get Google Calendar reminders. Untick “Charged automatically” first.");
     await prisma.item.update({ where: { id: target.itemId }, data: { remind } });
     syncLater(userId, { itemId: target.itemId });
     revalidatePath(`/bills/${target.itemId}`);

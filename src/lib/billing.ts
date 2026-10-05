@@ -1,4 +1,5 @@
 import { addDays, addMonths } from "./dates";
+import { chargeAfterPayment, nextCycleCharge, termChargeDate, type DueTerm } from "./due";
 
 export type ItemTypeName = "RECURRING" | "CONTRACT" | "POLICY" | "PASS" | "TRIAL" | "PREPAID";
 export type CycleUnitName = "DAY" | "WEEK" | "MONTH" | "YEAR" | "ONCE";
@@ -32,7 +33,7 @@ export const CHANNELS = [
   { value: "OTHER", label: "Other" },
 ] as const;
 
-export const CURRENCIES = ["HKD", "USD"] as const;
+export const CURRENCIES = ["HKD", "USD", "GBP"] as const;
 
 /** "/ year", "/ 3 months", "/ term" */
 export function cycleLabel(unit: CycleUnitName, count: number): string {
@@ -41,9 +42,9 @@ export function cycleLabel(unit: CycleUnitName, count: number): string {
   return count === 1 ? `/ ${word}` : `/ ${count} ${word}s`;
 }
 
-/** HK$10,181.17 · US$25 · HK$0 */
+/** HK$10,181.17 · US$25 · £18 · HK$0 */
 export function money(amount: number, currency = "HKD"): string {
-  const prefix = currency === "HKD" ? "HK$" : currency === "USD" ? "US$" : `${currency} `;
+  const prefix = currency === "HKD" ? "HK$" : currency === "USD" ? "US$" : currency === "GBP" ? "£" : `${currency} `;
   const whole = Number.isInteger(amount);
   return (
     prefix +
@@ -66,12 +67,8 @@ export function stepCycle(d: Date, unit: CycleUnitName, count: number): Date {
   }
 }
 
-type TermDates = {
-  startDate: Date;
-  endDate: Date | null;
-  dueDate: Date | null;
+type TermDates = DueTerm & {
   cycleUnit: CycleUnitName;
-  cycleCount: number;
   instalments?: { dueDate: Date }[];
 };
 
@@ -93,14 +90,19 @@ export function nextDate(type: ItemTypeName, active: boolean, terms: TermDates[]
   switch (type) {
     case "RECURRING": {
       if (t.cycleUnit === "ONCE" || t.cycleCount < 1) return null;
-      let d = t.startDate;
-      let guard = 0;
-      while (d < today && guard++ < 5000) d = stepCycle(d, t.cycleUnit, t.cycleCount);
-      return mk(d, "Renews");
+      const d = nextCycleCharge(t, today);
+      return d ? mk(d, "Renews") : null;
     }
-    case "POLICY":
-      if (t.startDate > today) return mk(t.dueDate ?? t.startDate, "Due");
-      return t.endDate ? mk(addDays(t.endDate, 1), "Renews", "Renewal overdue") : null;
+    case "POLICY": {
+      // This term's premium if it's still ahead; otherwise the next policy year's,
+      // which can fall before that year starts (Bupa: due 23 Jul for a 1 Aug start).
+      const due = termChargeDate(t);
+      if (due >= today || t.startDate > today) return mk(due, "Due");
+      if (!t.endDate) return null;
+      const nextStart = addDays(t.endDate, 1);
+      const nextDue = termChargeDate({ ...t, startDate: nextStart, dueDate: null });
+      return mk(nextDue, nextDue < nextStart ? "Renewal due" : "Renews", "Renewal overdue");
+    }
     case "CONTRACT":
       return t.endDate ? mk(t.endDate, "Contract ends", "Contract ended") : null;
     default:
@@ -125,10 +127,9 @@ export const URGENCY_BORDER: Record<Exclude<Urgency, null>, string> = {
 };
 
 /**
- * Recurring bills: the next instalment date — one cycle after the latest payment,
- * or the term start if nothing has been paid on it yet.
+ * Recurring bills: the next instalment date — the charge after the one the latest payment
+ * settled, or the first charge of the term if nothing has been paid on it yet.
  */
-export function nextInstalment(termStart: Date, unit: CycleUnitName, count: number, lastPaid: Date | null): Date {
-  if (!lastPaid || lastPaid < termStart) return termStart;
-  return stepCycle(lastPaid, unit, count);
+export function nextInstalment(t: DueTerm, lastPaid: Date | null): Date {
+  return chargeAfterPayment(t, lastPaid);
 }

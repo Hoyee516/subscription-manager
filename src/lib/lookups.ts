@@ -97,6 +97,9 @@ type TermRow = {
   startDate: Date;
   endDate: Date | null;
   dueDate: Date | null;
+  dueRule: string;
+  dueDay: number | null;
+  dueMonth: number | null;
   amount: { toString(): string };
   currency: string;
   amountHkd: { toString(): string } | null;
@@ -110,6 +113,9 @@ export function termToDefaults(t: TermRow): TermDefaults {
     startDate: isoDay(t.startDate),
     endDate: isoDay(t.endDate),
     dueDate: isoDay(t.dueDate),
+    dueRule: t.dueRule,
+    dueDay: t.dueDay ? String(t.dueDay) : "",
+    dueMonth: t.dueMonth ? String(t.dueMonth) : "",
     amount: t.amount.toString(),
     currency: t.currency,
     amountHkd: t.amountHkd?.toString() ?? "",

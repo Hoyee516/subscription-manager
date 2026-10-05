@@ -4,13 +4,13 @@ import { cookies } from "next/headers";
 import { Pencil } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import { todayHK, fmtDay } from "@/lib/dates";
+import { addDays, todayHK, fmtDay } from "@/lib/dates";
 import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName } from "@/lib/billing";
 import { toHkd } from "@/lib/fx";
 import { BackBar, Card, Pill, SectionLabel } from "@/components/ui";
 import ReminderEditor from "@/components/ReminderEditor";
 import ItemStatusActions from "@/components/ItemStatusActions";
-import { loadData } from "@/lib/schedule";
+import { loadData, occurrences } from "@/lib/schedule";
 import { itemTarget } from "@/lib/remind";
 import { calendarConfigured } from "@/lib/gcal";
 
@@ -49,6 +49,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const nd = nextDate(type, item.status === "ACTIVE", item.terms, today);
   const schedItem = sched.items[0];
   const remTarget = schedItem ? itemTarget(schedItem, sched, today) : null;
+  // Contracts charged every cycle: the header shows the contract end, so the next charge gets its own line.
+  const nextCharge =
+    type === "CONTRACT" && schedItem
+      ? occurrences(sched, today, addDays(today, 400), today).find((o) => o.kind === "charge" && !o.paid)?.date ?? null
+      : null;
 
   const head = latest
     ? (() => {
@@ -140,6 +145,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             {head.original && <p className="text-[13px] text-muted">{head.original}</p>}
           </>
         )}
+        {nextCharge && <p className="mt-1 text-[13px] font-bold text-ink">Next charge {fmtDay(nextCharge)}</p>}
         {nd && (
           <p className={`text-[13px] ${nd.past ? "font-bold text-hike-ink" : "text-muted"}`}>
             {nd.label} {fmtDay(nd.date)}
@@ -318,6 +324,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
         <Card className="flex flex-col gap-3">
           <SectionLabel>Reminders</SectionLabel>
+          {item.autoCharge ? (
+            <p className="text-xs text-muted">
+              Charged automatically, so it isn&apos;t added to Google Calendar. You&apos;ll still see an alert in the app 1 day
+              before each charge
+              {type !== "RECURRING" ? ", and before it ends" : latest?.cycleUnit === "YEAR" ? ", and before it renews" : ""}.
+            </p>
+          ) : (
           <ReminderEditor
             target={{ itemId: item.id }}
             initialOn={item.remind}
@@ -325,6 +338,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
             calendarReady={calendarConfigured(user?.calendarId)}
             beforeWhat={type === "CONTRACT" ? "contract end" : type === "PASS" || type === "TRIAL" || type === "PREPAID" ? "end date" : "due date"}
           />
+          )}
         </Card>
 
         {(item.notes || item.cancelUrl) && (
