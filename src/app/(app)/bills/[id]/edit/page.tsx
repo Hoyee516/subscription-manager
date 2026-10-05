@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { getCategoryLists, getMethods } from "@/lib/lookups";
 import type { ItemTypeName } from "@/lib/billing";
@@ -10,7 +10,7 @@ import { BackBar } from "@/components/ui";
 export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
-  const item = await prisma.item.findFirst({ where: { id, userId } });
+  const item = await db(userId).item.findFirst({ where: { id, userId } });
   if (!item) notFound();
   const [methods, { groups, categories }] = await Promise.all([getMethods(userId), getCategoryLists(userId)]);
 

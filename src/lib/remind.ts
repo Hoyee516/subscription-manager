@@ -6,6 +6,7 @@ import { addDays } from "./dates";
 import { money } from "./billing";
 import { isLapsed, loadData, occurrences, termHkd, type LoadedData, type LoadedItem, type LoadedUtility } from "./schedule";
 import { calendarConfigured, defaultCalendarId, deleteEvent, upsertEvent, type CalEvent } from "./gcal";
+import { dataChangedOutsideAction } from "./cache";
 
 export type RemTarget = { date: Date; title: string; what: string; href: string };
 
@@ -64,7 +65,13 @@ async function recordFailure(userId: string, key: string, name: string, href: st
  * Brings Google Calendar in line with the app for one user (or one bill / utility):
  * creates, moves or deletes events. Unchanged events aren't re-sent.
  */
-export async function syncCalendar(userId: string, only?: { itemId: string } | { utilityId: string }) {
+export async function syncCalendar(
+  userId: string,
+  only?: { itemId: string } | { utilityId: string },
+  // The daily job turns this off: it runs on a new day's (empty) cache and then fills it, and a
+  // cache clear in the same request would throw that fresh cache away.
+  { clearCache = true }: { clearCache?: boolean } = {}
+) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { calendarId: true } });
   const calendarId = user?.calendarId || defaultCalendarId();
   if (!calendarId || !calendarConfigured(calendarId)) return { synced: 0, failed: 0, skipped: true };
@@ -90,6 +97,7 @@ export async function syncCalendar(userId: string, only?: { itemId: string } | {
 
   let synced = 0;
   let failed = 0;
+  let clearedFailures = 0;
   const base = appUrl();
 
   const handle = async (
@@ -119,7 +127,7 @@ export async function syncCalendar(userId: string, only?: { itemId: string } | {
         await save({ calEventId: id, calEventHash: hash });
         synced++;
       }
-      await prisma.alert.deleteMany({ where: { dedupeKey: failKey } });
+      clearedFailures += (await prisma.alert.deleteMany({ where: { dedupeKey: failKey } })).count;
     } catch (e) {
       failed++;
       console.error(`[calendar] ${row.name}:`, e);
@@ -135,6 +143,8 @@ export async function syncCalendar(userId: string, only?: { itemId: string } | {
     const u = data.utilities.find((x) => x.id === row.id);
     await handle(row, u ? utilityTarget(u, today) : null, (d) => prisma.utility.update({ where: { id: row.id }, data: d }), { utilityId: row.id }, `utility:${row.id}`);
   }
+  // Event ids and "couldn't sync" alerts changed: the cached pages read them again.
+  if (clearCache && (synced || failed || clearedFailures)) dataChangedOutsideAction(userId);
   return { synced, failed, skipped: false };
 }
 

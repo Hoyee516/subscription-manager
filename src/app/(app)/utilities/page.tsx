@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { calendarSetting, utilitiesList } from "@/lib/reads";
 import { requireUserId } from "@/lib/session";
 import { addMonths, fmtDay, fmtMonth, todayHK } from "@/lib/dates";
 import { money } from "@/lib/billing";
@@ -24,20 +24,14 @@ export default async function UtilitiesPage({ searchParams }: { searchParams: Pr
   const thisMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   const yearAgo = addMonths(thisMonth, -12);
 
-  const utilities = (await prisma.utility.findMany({
-    where: { userId, isActive: true },
-    orderBy: { name: "asc" },
-    include: {
-      bills: { orderBy: { periodStart: "desc" }, include: { paymentMethod: { select: { label: true } } } },
-    },
-  })).sort((a, b) => rank(a.name) - rank(b.name));
+  const utilities = (await utilitiesList(userId)).sort((a, b) => rank(a.name) - rank(b.name));
   if (utilities.length === 0) {
     return <PageHeader title="Utilities" sub="No utilities yet" />;
   }
   const sel = utilities.find((x) => x.id === u) ?? utilities[0];
   // The calendar event "Remind me" creates (bills oldest-first, as the schedule expects).
   const remTarget = utilityTarget({ ...sel, bills: [...sel.bills].reverse() }, today);
-  const calUser = await prisma.user.findUnique({ where: { id: userId }, select: { calendarId: true } });
+  const calUser = await calendarSetting(userId);
   const calendarReady = calendarConfigured(calUser?.calendarId);
 
   // Average monthly cost over the last 12 months of bills.

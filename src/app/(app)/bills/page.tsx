@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { billsList } from "@/lib/reads";
 import { requireUserId } from "@/lib/session";
 import { todayHK, fmtDay } from "@/lib/dates";
 import { toHkd } from "@/lib/fx";
@@ -46,21 +46,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
   const filter: FilterKey = FILTERS.some((x) => x.key === f) ? (f as FilterKey) : "all";
   const today = todayHK();
 
-  const items = await prisma.item.findMany({
-    where: { userId, parentId: null },
-    orderBy: [{ categoryGroup: "asc" }, { name: "asc" }],
-    include: {
-      paymentMethod: { select: { label: true } },
-      terms: {
-        orderBy: { startDate: "asc" },
-        include: {
-          payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true, channel: true, batchId: true } },
-          instalments: { select: { dueDate: true } },
-        },
-      },
-      riders: { include: { terms: { orderBy: { startDate: "desc" }, take: 1 } } },
-    },
-  });
+  const items = await billsList(userId);
 
   // HKD first; original currency underneath when it isn't HKD.
   const amounts = (t: TermLike | undefined) => {

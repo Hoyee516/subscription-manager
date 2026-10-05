@@ -1,6 +1,6 @@
 // Phase 2 engine: monthly cost (MRC) per item and the dated charges ("occurrences")
 // that the Home overview, Calendar and Cards screens are built from.
-import { prisma } from "./prisma";
+import { db } from "./cache";
 import { addDays, addMonths, daysBetween } from "./dates";
 import { stepCycle, type CycleUnitName, type ItemTypeName } from "./billing";
 import { toHkd } from "./fx";
@@ -87,7 +87,7 @@ export async function loadData(userId: string, only?: { itemId: string } | { uti
   const itemWhere = only ? ("itemId" in only ? { id: only.itemId } : { id: { in: [] as string[] } }) : {};
   const utilityWhere = only ? ("utilityId" in only ? { id: only.utilityId } : { id: { in: [] as string[] } }) : {};
   const [items, utilities] = await Promise.all([
-    prisma.item.findMany({
+    db(userId).item.findMany({
       where: { userId, status: "ACTIVE", ...itemWhere },
       orderBy: { name: "asc" },
       include: {
@@ -99,7 +99,7 @@ export async function loadData(userId: string, only?: { itemId: string } | { uti
         },
       },
     }),
-    prisma.utility.findMany({
+    db(userId).utility.findMany({
       where: { userId, isActive: true, ...utilityWhere },
       orderBy: { name: "asc" },
       include: { bills: { orderBy: { periodStart: "asc" }, include: { paymentMethod: { select: { label: true } } } } },

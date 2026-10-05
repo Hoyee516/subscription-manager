@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import MethodForm from "@/components/MethodForm";
 import { BackBar } from "@/components/ui";
@@ -7,7 +7,7 @@ import { BackBar } from "@/components/ui";
 export default async function EditMethodPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
-  const m = await prisma.paymentMethod.findFirst({ where: { id, userId } });
+  const m = await db(userId).paymentMethod.findFirst({ where: { id, userId } });
   if (!m) notFound();
   return (
     <>

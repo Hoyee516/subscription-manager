@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { dataChanged } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
 import { syncLater } from "@/lib/remind";
@@ -61,6 +62,7 @@ export async function saveUtilityBill(utilityId: string, billId: string | null, 
   }
   syncLater(userId, { utilityId });
   revalidatePath("/utilities");
+  dataChanged(userId);
   return { ok: true, id: utilityId };
 }
 
@@ -71,5 +73,6 @@ export async function deleteUtilityBill(billId: string): Promise<ActionResult> {
   await prisma.utilityBill.delete({ where: { id: billId } });
   syncLater(userId, { utilityId: b.utilityId });
   revalidatePath("/utilities");
+  dataChanged(userId);
   return { ok: true, id: b.utilityId };
 }

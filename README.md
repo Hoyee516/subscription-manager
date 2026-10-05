@@ -86,3 +86,17 @@ npx prisma db push && npx prisma generate && npx tsx --env-file=.env prisma/fixe
 ```
 
 Check the list it prints, then run it again without `--dry` to apply. Safe to re-run.
+
+## Page cache (5 Oct 2026)
+
+Page reads are cached on the server per user (`src/lib/cache.ts`), so most page views don't touch the database:
+
+- **Reads:** pages and loaders read through `db(userId).<model>.findMany(…)` instead of `prisma.…`. Reads inside Server Actions (checks before writing) still use `prisma` directly.
+- **Writes:** every Server Action calls `dataChanged(userId)` after a successful write. **A new action that writes must do the same**, or its change won't show until the next day.
+- **New day / new deploy:** the cache key includes today's date (HKT) and the deployment, so each day and each deploy start fresh.
+- **Daily job (06:00 HKT):** after the calendar sync it pre-loads the main pages and every bill page, so the first open of the day is served from the cache.
+- **Changed data outside the app** (a fix script, Neon console): clear the cache so the app shows it straight away:
+
+```bash
+curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" "https://YOUR-APP.vercel.app/api/cron/daily?refresh=1"
+```

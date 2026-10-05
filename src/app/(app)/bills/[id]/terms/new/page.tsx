@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { addDays, addMonths, daysBetween, isoDay, todayHK } from "@/lib/dates";
 import { getRiderTermRows, termToDefaults } from "@/lib/lookups";
@@ -16,7 +16,7 @@ import { BackBar } from "@/components/ui";
 export default async function NewTermPage({ params }: { params: Promise<{ id: string }> }) {
   const userId = await requireUserId();
   const { id } = await params;
-  const item = await prisma.item.findFirst({
+  const item = await db(userId).item.findFirst({
     where: { id, userId },
     include: {
       terms: {

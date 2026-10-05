@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { dataChanged } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { parseDay } from "@/lib/dates";
 import { CHANNELS, CURRENCIES, CYCLE_UNITS, ITEM_TYPES } from "@/lib/billing";
@@ -131,6 +132,7 @@ export async function createItem(fd: FormData): Promise<ActionResult> {
   });
   revalidatePath("/bills");
   syncLater(userId);
+  dataChanged(userId);
   return { ok: true, id: created.id };
 }
 
@@ -144,6 +146,7 @@ export async function updateItem(itemId: string, fd: FormData): Promise<ActionRe
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
   syncLater(userId);
+  dataChanged(userId);
   return { ok: true, id: itemId };
 }
 
@@ -154,6 +157,7 @@ export async function setItemStatus(itemId: string, status: "ACTIVE" | "ENDED" |
   revalidatePath("/bills");
   revalidatePath(`/bills/${itemId}`);
   syncLater(userId);
+  dataChanged(userId);
   return { ok: true, id: itemId };
 }
 
@@ -164,6 +168,7 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
   await deleteItemEvents(userId, [itemId, ...riders.map((r) => r.id)]);
   await prisma.item.delete({ where: { id: itemId } }); // cascades to riders, terms, payments
   revalidatePath("/bills");
+  dataChanged(userId);
   return { ok: true };
 }
 
@@ -235,6 +240,7 @@ export async function saveTerm(itemId: string, termId: string | null, fd: FormDa
   revalidatePath(`/bills/${itemId}`);
   revalidatePath("/bills");
   syncLater(userId);
+  dataChanged(userId);
   return { ok: true, id: itemId };
 }
 
@@ -267,6 +273,7 @@ export async function deleteTerm(termId: string): Promise<ActionResult> {
   revalidatePath(`/bills/${t.itemId}`);
   revalidatePath("/bills");
   syncLater(userId);
+  dataChanged(userId);
   return {
     ok: true,
     id: t.itemId,
@@ -339,6 +346,7 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
   for (const it of partners) revalidatePath(`/bills/${it.id}`);
   revalidatePath("/bills");
   syncLater(userId);
+  dataChanged(userId);
   return {
     ok: true,
     id: t.itemId,
@@ -535,6 +543,7 @@ export async function deletePayment(paymentId: string): Promise<ActionResult> {
   for (const b of new Set([p.batchId, ...riderPayments.map((r) => r.batchId)])) if (b) await cleanupBatch(b);
   revalidatePath(`/bills/${p.term.itemId}`);
   syncLater(userId);
+  dataChanged(userId);
   return { ok: true, id: p.term.itemId };
 }
 
@@ -560,5 +569,6 @@ export async function saveRemind(target: { itemId: string } | { utilityId: strin
     syncLater(userId, { utilityId: u.id });
     revalidatePath("/utilities");
   }
+  dataChanged(userId);
   return { ok: true };
 }

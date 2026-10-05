@@ -1,9 +1,9 @@
-import { prisma } from "./prisma";
+import { db } from "./cache";
 import { isoDay } from "./dates";
 import type { TermDefaults } from "@/components/TermFields";
 
 export async function getMethods(userId: string) {
-  return prisma.paymentMethod.findMany({
+  return db(userId).paymentMethod.findMany({
     where: { userId, isActive: true },
     orderBy: { label: "asc" },
     select: { id: true, label: true },
@@ -11,7 +11,7 @@ export async function getMethods(userId: string) {
 }
 
 export async function getCategoryLists(userId: string) {
-  const rows = await prisma.item.findMany({
+  const rows = await db(userId).item.findMany({
     where: { userId },
     distinct: ["categoryGroup", "category"],
     select: { categoryGroup: true, category: true },
@@ -27,9 +27,9 @@ export async function getCategoryLists(userId: string) {
  * Riders aren't listed: they're paid together with their main bill.
  */
 export async function getCombineCandidates(userId: string, itemId: string) {
-  const item = await prisma.item.findFirst({ where: { id: itemId, userId }, select: { categoryGroup: true, vendor: true } });
+  const item = await db(userId).item.findFirst({ where: { id: itemId, userId }, select: { categoryGroup: true, vendor: true } });
   if (!item) return [];
-  return prisma.item.findMany({
+  return db(userId).item.findMany({
     where: { userId, categoryGroup: item.categoryGroup, vendor: item.vendor, id: { not: itemId }, parentId: null },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
@@ -42,7 +42,7 @@ export async function getCombineCandidates(userId: string, itemId: string) {
  * term for the same policy year (or its latest term).
  */
 export async function getRiderRows(userId: string, itemId: string, termStart: Date, paidAt: Date | null) {
-  const riders = await prisma.item.findMany({
+  const riders = await db(userId).item.findMany({
     where: { userId, parentId: itemId },
     orderBy: { name: "asc" },
     select: {
@@ -71,7 +71,7 @@ export async function getRiderRows(userId: string, itemId: string, termStart: Da
  * starting the same day. New term: prefilled from each rider's latest term.
  */
 export async function getRiderTermRows(userId: string, itemId: string, startDate: Date | null) {
-  const riders = await prisma.item.findMany({
+  const riders = await db(userId).item.findMany({
     where: { userId, parentId: itemId },
     orderBy: { name: "asc" },
     select: {

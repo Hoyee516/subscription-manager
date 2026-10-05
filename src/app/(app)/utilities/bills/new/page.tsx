@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { getMethods } from "@/lib/lookups";
 import UtilityBillForm from "@/components/UtilityBillForm";
@@ -8,7 +8,7 @@ import { BackBar } from "@/components/ui";
 export default async function NewUtilityBillPage({ searchParams }: { searchParams: Promise<{ u?: string; m?: string }> }) {
   const userId = await requireUserId();
   const { u, m } = await searchParams;
-  const utility = u ? await prisma.utility.findFirst({ where: { id: u, userId } }) : null;
+  const utility = u ? await db(userId).utility.findFirst({ where: { id: u, userId } }) : null;
   if (!utility) notFound();
   const methods = await getMethods(userId);
 

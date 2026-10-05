@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { isoDay } from "@/lib/dates";
 import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
@@ -9,7 +9,7 @@ import { BackBar } from "@/components/ui";
 export default async function EditPaymentPage({ params }: { params: Promise<{ id: string; paymentId: string }> }) {
   const userId = await requireUserId();
   const { id, paymentId } = await params;
-  const p = await prisma.payment.findFirst({
+  const p = await db(userId).payment.findFirst({
     where: { id: paymentId, term: { itemId: id, item: { userId } } },
     include: {
       term: { select: { startDate: true, item: { select: { name: true, parentId: true } } } },
@@ -21,7 +21,7 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
   // A rider's payment is edited together with its main bill's payment on the same date.
   const parentId = p.term.item.parentId;
   if (parentId) {
-    const main = await prisma.payment.findFirst({ where: { paidAt: p.paidAt, term: { itemId: parentId } }, select: { id: true } });
+    const main = await db(userId).payment.findFirst({ where: { paidAt: p.paidAt, term: { itemId: parentId } }, select: { id: true } });
     if (main) redirect(`/bills/${parentId}/payments/${main.id}`);
   }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { dataChanged } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import type { AlertKind } from "@/lib/alerts";
 import type { ActionResult } from "./items";
@@ -33,6 +34,7 @@ export async function dismissAlert(a: { key: string; type: AlertKind; title: str
     update: { dismissedAt: now },
   });
   revalidatePath("/");
+  dataChanged(userId);
   return { ok: true };
 }
 
@@ -44,5 +46,6 @@ export async function restoreAlert(key: string): Promise<ActionResult> {
   if (row.type === "SYNC_FAILED") await prisma.alert.update({ where: { dedupeKey: key }, data: { dismissedAt: null } });
   else await prisma.alert.delete({ where: { dedupeKey: key } });
   revalidatePath("/");
+  dataChanged(userId);
   return { ok: true };
 }

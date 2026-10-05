@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { dataChanged } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import type { ActionResult } from "./items";
 
@@ -41,6 +42,7 @@ export async function saveMethod(id: string | null, fd: FormData): Promise<Actio
   }
   revalidatePath("/cards");
   revalidatePath("/");
+  dataChanged(userId);
   return { ok: true };
 }
 
@@ -51,5 +53,6 @@ export async function setMethodActive(id: string, isActive: boolean): Promise<Ac
   if (!own) return { ok: false, error: "Payment method not found." };
   await prisma.paymentMethod.update({ where: { id }, data: { isActive } });
   revalidatePath("/cards");
+  dataChanged(userId);
   return { ok: true };
 }

@@ -1,7 +1,7 @@
 // Statistics page data: what was actually paid (history), biggest bills and per-card load
 // (now), price analysis (insurance premium growth, subscriptions, telecom contracts, tax) and the
 // mortgage principal/interest split.
-import { prisma } from "./prisma";
+import { db } from "./cache";
 import { addDays, addMonths, daysBetween } from "./dates";
 import { money } from "./billing";
 import { termChargeDate } from "./due";
@@ -23,11 +23,11 @@ export type Paid = { date: Date; amount: number; category: Category };
 /** Every payment actually made: logged payments, paid utility bills, and auto-charged bills' scheduled charges. */
 async function paidHistory(userId: string, today: Date, data: Awaited<ReturnType<typeof loadData>>): Promise<Paid[]> {
   const [payments, bills] = await Promise.all([
-    prisma.payment.findMany({
+    db(userId).payment.findMany({
       where: { term: { item: { userId } } },
       select: { paidAt: true, amountHkd: true, term: { select: { item: { select: { isSavings: true, categoryGroup: true } } } } },
     }),
-    prisma.utilityBill.findMany({ where: { utility: { userId } }, select: { paidAt: true, dueDate: true, periodStart: true, amount: true } }),
+    db(userId).utilityBill.findMany({ where: { utility: { userId } }, select: { paidAt: true, dueDate: true, periodStart: true, amount: true } }),
   ]);
   const out: Paid[] = payments.map((p) => ({ date: p.paidAt, amount: Number(p.amountHkd), category: categoryOf(p.term.item) }));
   for (const b of bills) out.push({ date: b.paidAt ?? b.dueDate ?? b.periodStart, amount: Number(b.amount), category: "utility" });
@@ -76,7 +76,7 @@ export async function loadStats(userId: string, today: Date) {
     .slice(0, 8);
 
   // 6 · Per payment method (same basis as the Cards page)
-  const methods = await prisma.paymentMethod.findMany({ where: { userId, isActive: true }, select: { id: true, label: true } });
+  const methods = await db(userId).paymentMethod.findMany({ where: { userId, isActive: true }, select: { id: true, label: true } });
   const yearAgo = addMonths(today, -12);
   const byMethod = methods
     .map((m) => {
@@ -161,7 +161,7 @@ export async function loadStats(userId: string, today: Date) {
     .map(([y, v]) => ({ label: `${y}/${String((y + 1) % 100).padStart(2, "0")}`, total: v.total, paid: v.paid >= v.total - 1 }));
 
   // 7 · Mortgage: principal / interest from the payment notes ("Principal 19,851.48 · Interest 12,793.02 · … · Balance after 6,120,802.17")
-  const mortgage = await prisma.item.findFirst({
+  const mortgage = await db(userId).item.findFirst({
     where: { userId, name: { contains: "mortgage", mode: "insensitive" } },
     select: { name: true, terms: { select: { payments: { select: { paidAt: true, note: true }, orderBy: { paidAt: "asc" } } } } },
   });

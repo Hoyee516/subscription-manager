@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { fmtDay, isoDay, todayHK } from "@/lib/dates";
 import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
@@ -10,7 +10,7 @@ import { BackBar } from "@/components/ui";
 export default async function LogPaymentPage({ params }: { params: Promise<{ id: string; termId: string }> }) {
   const userId = await requireUserId();
   const { id, termId } = await params;
-  const term = await prisma.term.findFirst({
+  const term = await db(userId).term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
     include: {
       item: { select: { name: true, paymentMethodId: true, type: true } },

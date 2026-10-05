@@ -1,7 +1,7 @@
 // Needs attention: the 11 alert kinds, worked out fresh from the data each time Home opens
 // (so fixing the cause clears an alert at once). The Alert table only remembers what you
 // dismissed, plus calendar-sync failures written by the sync.
-import { prisma } from "./prisma";
+import { db } from "./cache";
 import { addDays, addMonths, daysBetween, fmtDay, fmtMonth } from "./dates";
 import { money } from "./billing";
 import { nextCycleCharge } from "./due";
@@ -289,11 +289,11 @@ export function sortAlerts<T extends { type: AlertKind; date: Date }>(a: T[]): T
 /** Live alerts minus dismissed ones, plus calendar-sync failures; and the dismissed list. */
 export async function loadAlerts(userId: string, data: LoadedData, today: Date) {
   const [methods, rows] = await Promise.all([
-    prisma.paymentMethod.findMany({
+    db(userId).paymentMethod.findMany({
       where: { userId },
       select: { id: true, label: true, isActive: true, expiryMonth: true, expiryYear: true },
     }),
-    prisma.alert.findMany({ where: { userId }, orderBy: { dismissedAt: "desc" } }),
+    db(userId).alert.findMany({ where: { userId }, orderBy: { dismissedAt: "desc" } }),
   ]);
   const dismissed = new Set(rows.filter((r) => r.dismissedAt).map((r) => r.dedupeKey));
   const sync: AlertView[] = rows

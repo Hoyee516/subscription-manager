@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { isoDay } from "@/lib/dates";
 import { getMethods } from "@/lib/lookups";
@@ -9,7 +9,7 @@ import { BackBar } from "@/components/ui";
 export default async function EditUtilityBillPage({ params }: { params: Promise<{ billId: string }> }) {
   const userId = await requireUserId();
   const { billId } = await params;
-  const bill = await prisma.utilityBill.findFirst({
+  const bill = await db(userId).utilityBill.findFirst({
     where: { id: billId, utility: { userId } },
     include: { utility: { select: { id: true, name: true } } },
   });

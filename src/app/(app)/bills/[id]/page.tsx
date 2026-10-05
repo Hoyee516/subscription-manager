@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { Pencil } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { billPage, calendarSetting } from "@/lib/reads";
 import { requireUserId } from "@/lib/session";
 import { addDays, todayHK, fmtDay } from "@/lib/dates";
 import { cycleLabel, money, nextDate, TYPE_LABEL, type CycleUnitName, type ItemTypeName } from "@/lib/billing";
@@ -19,23 +19,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const userId = await requireUserId();
   const { id } = await params;
   const [item, sched, user] = await Promise.all([
-    prisma.item.findFirst({
-    where: { id, userId },
-    include: {
-      parent: { select: { id: true, name: true } },
-      paymentMethod: { select: { label: true } },
-      riders: { orderBy: { name: "asc" }, include: { terms: { orderBy: { startDate: "asc" } } } },
-      terms: {
-        orderBy: { startDate: "asc" },
-        include: {
-          payments: { orderBy: { paidAt: "asc" }, include: { paymentMethod: { select: { label: true } } } },
-          instalments: { orderBy: { dueDate: "asc" } },
-        },
-      },
-    },
-    }),
+    billPage(userId, id),
     loadData(userId, { itemId: id }),
-    prisma.user.findUnique({ where: { id: userId }, select: { calendarId: true } }),
+    calendarSetting(userId),
   ]);
   if (!item) notFound();
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus, TriangleAlert } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { allMethods } from "@/lib/reads";
 import { requireUserId } from "@/lib/session";
 import { addDays, addMonths, todayHK } from "@/lib/dates";
 import { cardExpiry, expText } from "@/lib/alerts";
@@ -16,7 +16,7 @@ export default async function CardsPage() {
   const today = todayHK();
   const [data, methods] = await Promise.all([
     loadData(userId),
-    prisma.paymentMethod.findMany({ where: { userId }, orderBy: { label: "asc" } }),
+    allMethods(userId),
   ]);
 
   // Per method: active bills charged to it (riders follow their main bill) and their yearly cost.
