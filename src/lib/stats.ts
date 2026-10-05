@@ -118,7 +118,7 @@ export async function loadStats(userId: string, today: Date) {
       if (i.type === "PASS") {
         const recent = terms.filter((t) => termChargeDate(t) > addDays(today, -365));
         perYear = recent.reduce((sum, t) => sum + (termHkd(t) ?? 0), 0);
-        detail = `${recent.length} ${recent.length === 1 ? "pass" : "passes"} in the last 12 months · ${price} each`;
+        detail = `${recent.length} ${recent.length === 1 ? "subscription" : "subscriptions"} in the last 12 months · ${price} each`;
       } else {
         if (isLapsed(i, today)) return null;
         perYear = itemMonthly(i, today) * 12;

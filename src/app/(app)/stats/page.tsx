@@ -102,8 +102,8 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           </Question>
           <Question
             label="Software & more"
-            q="What does each subscription cost a year, and has it gone up?"
-            why="Today's price over a year, in HKD. Passes count what was paid in the last 12 months; prepaid plans are spread over their term. A rise since the first price shows in orange. Tap a bill for details."
+            q="What does each subscription cost a year?"
+            why="Today's price over a year, in HKD. Monthly subscription was counted by amount paid in the last 12 months; prepaid plans are spread over their term. A rise since the first price shows in orange. Tap a bill for details."
           >
             {s.subscriptions.length ? <PriceBars rows={s.subscriptions} /> : <p className="text-sm text-muted">No subscriptions yet.</p>}
           </Question>
