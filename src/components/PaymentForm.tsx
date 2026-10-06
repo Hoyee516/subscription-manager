@@ -4,7 +4,7 @@ import { deletePayment, savePayment } from "@/app/actions/items";
 import { CHANNELS, money } from "@/lib/billing";
 import { splitInstalment } from "@/lib/mortgage";
 import { useAction } from "./useAction";
-import { Card, Field, btnPrimary, inputCls } from "./ui";
+import { Card, Field, btnPrimary, commaBlur, inputCls, withCommas } from "./ui";
 
 export type PaymentDefaults = {
   paidAt: string;
@@ -49,9 +49,11 @@ export default function PaymentForm({
   mortgage?: MortgageDefaults;
 }) {
   const { pending, run } = useAction();
-  const [mainAmt, setMainAmt] = useState(d.amountHkd);
-  const [riderAmts, setRiderAmts] = useState<Record<string, string>>(Object.fromEntries(riders.map((r) => [r.itemId, r.amount])));
-  const [mtg, setMtg] = useState(mortgage);
+  const [mainAmt, setMainAmt] = useState(withCommas(d.amountHkd));
+  const [riderAmts, setRiderAmts] = useState<Record<string, string>>(Object.fromEntries(riders.map((r) => [r.itemId, withCommas(r.amount)])));
+  const [mtg, setMtg] = useState(
+    mortgage && { ...mortgage, interest: withCommas(mortgage.interest), principal: withCommas(mortgage.principal), balance: withCommas(mortgage.balance) },
+  );
   // Rate or amount changed: interest, principal and balance are worked out again from the previous balance.
   const resplit = (rate: string, amount: string) => {
     if (!mtg) return;
@@ -60,7 +62,7 @@ export default function PaymentForm({
     const next = { ...mtg, rate };
     if (mtg.prevBalance !== null && r > 0 && a > 0) {
       const x = splitInstalment(mtg.prevBalance, r, a);
-      Object.assign(next, { interest: String(x.interest), principal: String(x.principal), balance: String(x.balance) });
+      Object.assign(next, { interest: withCommas(String(x.interest)), principal: withCommas(String(x.principal)), balance: withCommas(String(x.balance)) });
     }
     setMtg(next);
   };
@@ -115,11 +117,12 @@ export default function PaymentForm({
                   name="amountHkd"
                   inputMode="decimal"
                   required
-                  defaultValue={d.amountHkd}
+                  defaultValue={withCommas(d.amountHkd)}
                   onChange={(e) => {
                     setMainAmt(e.target.value);
                     if (mtg) resplit(mtg.rate, e.target.value);
                   }}
+                  onBlur={commaBlur}
                   className={inputCls}
                 />
               </Field>
@@ -147,6 +150,7 @@ export default function PaymentForm({
                     required
                     value={mainAmt}
                     onChange={(e) => setMainAmt(e.target.value)}
+                    onBlur={() => setMainAmt(withCommas(mainAmt))}
                     className={`${inputCls} text-right`}
                   />
                 </div>
@@ -163,6 +167,7 @@ export default function PaymentForm({
                       aria-label={`${r.name} amount (HKD)`}
                       value={riderAmts[r.itemId] ?? ""}
                       onChange={(e) => setRiderAmts({ ...riderAmts, [r.itemId]: e.target.value })}
+                      onBlur={(e) => setRiderAmts({ ...riderAmts, [r.itemId]: withCommas(e.target.value) })}
                       className={`${inputCls} text-right`}
                     />
                   </div>
@@ -198,7 +203,7 @@ export default function PaymentForm({
               </div>
             </Field>
             <Field label="Combined amount (HKD)" htmlFor="combinedTotal" hint="Total of the whole combined bill.">
-              <input id="combinedTotal" name="combinedTotal" inputMode="decimal" defaultValue={d.combinedTotal} className={inputCls} />
+              <input id="combinedTotal" name="combinedTotal" inputMode="decimal" defaultValue={withCommas(d.combinedTotal)} onBlur={commaBlur} className={inputCls} />
             </Field>
           </>
         )}
@@ -222,6 +227,7 @@ export default function PaymentForm({
                     inputMode="decimal"
                     value={mtg[key]}
                     onChange={(e) => setMtg({ ...mtg, [key]: e.target.value })}
+                    onBlur={(e) => setMtg({ ...mtg, [key]: withCommas(e.target.value) })}
                     className={inputCls}
                   />
                 </Field>

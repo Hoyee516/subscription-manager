@@ -1,7 +1,7 @@
 "use client";
 import { deleteUtilityBill, saveUtilityBill } from "@/app/actions/utilities";
 import { useAction } from "./useAction";
-import { Card, Field, btnPrimary, inputCls } from "./ui";
+import { Card, Field, btnPrimary, commaBlur, inputCls, withCommas } from "./ui";
 
 export type BillDefaults = {
   billMonth: string; // "2026-10"
@@ -41,11 +41,11 @@ export default function UtilityBillForm({
             <input id="billMonth" name="billMonth" type="month" required defaultValue={d.billMonth} className={inputCls} />
           </Field>
           <Field label="Amount due (HK$)" htmlFor="amount">
-            <input id="amount" name="amount" inputMode="decimal" required defaultValue={d.amount} className={inputCls} />
+            <input id="amount" name="amount" inputMode="decimal" required defaultValue={withCommas(d.amount)} onBlur={commaBlur} className={inputCls} />
           </Field>
         </div>
         <Field label="Subsidy / credit (HK$)" htmlFor="credit" hint="Optional. e.g. 256.31 — stored as a credit.">
-          <input id="credit" name="credit" inputMode="decimal" defaultValue={d.credit} className={inputCls} />
+          <input id="credit" name="credit" inputMode="decimal" defaultValue={withCommas(d.credit)} onBlur={commaBlur} className={inputCls} />
         </Field>
         <div className="grid grid-cols-2 gap-2.5">
           <Field label="Due date" htmlFor="dueDate">

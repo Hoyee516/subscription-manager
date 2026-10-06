@@ -11,7 +11,7 @@ import {
   termChargeDate,
   type DueRuleName,
 } from "@/lib/due";
-import { Field, inputCls } from "./ui";
+import { commaBlur, Field, inputCls, withCommas } from "./ui";
 
 export type TermDefaults = {
   startDate: string;
@@ -107,7 +107,7 @@ export default function TermFields({
     <>
       <div className="grid grid-cols-2 gap-2.5">
         <Field label="Amount" htmlFor="amount">
-          <input id="amount" name="amount" inputMode="decimal" required defaultValue={d.amount} className={inputCls} />
+          <input id="amount" name="amount" inputMode="decimal" required defaultValue={withCommas(d.amount)} onBlur={commaBlur} className={inputCls} />
         </Field>
         <Field label="Currency" htmlFor="currency">
           <select id="currency" name="currency" defaultValue={d.currency} className={inputCls}>
@@ -205,7 +205,7 @@ export default function TermFields({
       {preview && <p className="rounded-[10px] bg-brand-soft px-3 py-2.5 text-[13px] font-bold text-brand">{preview}</p>}
 
       <Field label="HKD equivalent" htmlFor="amountHkd" hint="Leave blank to convert at the fixed rate (US$1 = HK$7.8, £1 = HK$10.37).">
-        <input id="amountHkd" name="amountHkd" inputMode="decimal" placeholder="If not billed in HKD" defaultValue={d.amountHkd} className={inputCls} />
+        <input id="amountHkd" name="amountHkd" inputMode="decimal" placeholder="If not billed in HKD" defaultValue={withCommas(d.amountHkd)} onBlur={commaBlur} className={inputCls} />
       </Field>
       <Field label="Term notes" htmlFor="termNotes">
         <input id="termNotes" name="termNotes" defaultValue={d.notes} className={inputCls} />

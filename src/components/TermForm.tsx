@@ -3,7 +3,7 @@ import { deleteTerm, saveTerm } from "@/app/actions/items";
 import TermFields, { type TermDefaults } from "./TermFields";
 import { CURRENCIES } from "@/lib/billing";
 import { useAction } from "./useAction";
-import { Card, SectionLabel, btnPrimary, inputCls, labelCls } from "./ui";
+import { Card, SectionLabel, btnPrimary, commaBlur, inputCls, labelCls, withCommas } from "./ui";
 
 /** A rider's term for the same policy year: shares dates and cycle with the main term. */
 export type InstalmentRow = { dueDate: string; amountHkd: string };
@@ -52,7 +52,7 @@ export default function TermForm({
               </label>
               <label className="flex min-w-0 flex-col gap-1">
                 <span className={labelCls}>Amount (HKD)</span>
-                <input name={`inst_amt_${n}`} inputMode="decimal" defaultValue={instalments[n]?.amountHkd ?? ""} className={inputCls} />
+                <input name={`inst_amt_${n}`} inputMode="decimal" defaultValue={withCommas(instalments[n]?.amountHkd ?? "")} onBlur={commaBlur} className={inputCls} />
               </label>
             </div>
           ))}
@@ -76,7 +76,8 @@ export default function TermForm({
                   inputMode="decimal"
                   aria-label={`${r.name} amount`}
                   placeholder="Amount"
-                  defaultValue={r.amount}
+                  defaultValue={withCommas(r.amount)}
+                  onBlur={commaBlur}
                   className={inputCls}
                 />
                 <select name={`riderCurrency_${r.itemId}`} aria-label={`${r.name} currency`} defaultValue={r.currency} className={inputCls}>
@@ -91,7 +92,8 @@ export default function TermForm({
                   name={`riderHkd_${r.itemId}`}
                   inputMode="decimal"
                   placeholder="If not billed in HKD"
-                  defaultValue={r.amountHkd}
+                  defaultValue={withCommas(r.amountHkd)}
+                  onBlur={commaBlur}
                   className={inputCls}
                 />
               </label>

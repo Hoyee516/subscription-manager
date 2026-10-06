@@ -5,6 +5,16 @@ import { ChevronLeft } from "lucide-react";
 
 export const inputCls =
   "min-h-11 w-full rounded-[10px] border border-[#D5D8D1] bg-white px-3 text-[15px] text-ink outline-none focus:border-brand";
+/** Money inputs: "32644.5" → "32,644.5". Decimals stay as typed; anything not a number is left alone. */
+export function withCommas(v: string): string {
+  const s = v.replace(/,/g, "").trim();
+  const m = s.match(/^(-?)(\d+)(\.\d*)?$/);
+  return m ? m[1] + m[2].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (m[3] ?? "") : v;
+}
+/** onBlur for uncontrolled money inputs: adds the separators once typing is done (not while typing, so the cursor doesn't jump). */
+export const commaBlur = (e: { currentTarget: HTMLInputElement }) => {
+  e.currentTarget.value = withCommas(e.currentTarget.value);
+};
 export const labelCls = "text-[13px] font-bold text-[#3C4650]";
 export const btnPrimary =
   "inline-flex min-h-12 items-center justify-center rounded-xl bg-brand px-4 text-sm font-bold text-white disabled:opacity-60";
