@@ -160,22 +160,22 @@ export async function loadStats(userId: string, today: Date) {
     .filter(([, v]) => v.total > 0)
     .map(([y, v]) => ({ label: `${y}/${String((y + 1) % 100).padStart(2, "0")}`, total: v.total, paid: v.paid >= v.total - 1 }));
 
-  // 7 · Mortgage: principal / interest from the payment notes ("Principal 19,851.48 · Interest 12,793.02 · … · Balance after 6,120,802.17")
+  // 7 · Mortgage: principal / interest from each payment's mortgage fields (bill category "Mortgage").
   const mortgage = await db(userId).item.findFirst({
-    where: { userId, name: { contains: "mortgage", mode: "insensitive" } },
-    select: { name: true, terms: { select: { payments: { select: { paidAt: true, note: true }, orderBy: { paidAt: "asc" } } } } },
+    where: { userId, category: { equals: "mortgage", mode: "insensitive" } },
+    select: {
+      name: true,
+      terms: { select: { payments: { select: { paidAt: true, principalHkd: true, interestHkd: true, balanceHkd: true }, orderBy: { paidAt: "asc" } } } },
+    },
   });
-  const num = (s: string) => Number(s.replace(/,/g, ""));
   const split = new Map<number, { principal: number; interest: number }>();
   let balance: { amount: number; date: Date } | null = null;
   for (const p of mortgage?.terms.flatMap((t) => t.payments) ?? []) {
-    const m = p.note?.match(/Principal ([\d,.]+) · Interest ([\d,.]+)/);
-    if (!m) continue;
+    if (p.principalHkd === null || p.interestHkd === null) continue;
     const y = p.paidAt.getUTCFullYear();
     const cur = split.get(y) ?? { principal: 0, interest: 0 };
-    split.set(y, { principal: cur.principal + num(m[1]), interest: cur.interest + num(m[2]) });
-    const b = p.note?.match(/Balance after ([\d,.]+)/);
-    if (b && (!balance || p.paidAt > balance.date)) balance = { amount: num(b[1]), date: p.paidAt };
+    split.set(y, { principal: cur.principal + Number(p.principalHkd), interest: cur.interest + Number(p.interestHkd) });
+    if (p.balanceHkd !== null && (!balance || p.paidAt > balance.date)) balance = { amount: Number(p.balanceHkd), date: p.paidAt };
   }
   const mortgageYears = [...split.entries()]
     .sort((a, b) => a[0] - b[0])

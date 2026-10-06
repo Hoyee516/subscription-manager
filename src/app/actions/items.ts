@@ -9,6 +9,7 @@ import { parseDay } from "@/lib/dates";
 import { CHANNELS, CURRENCIES, CYCLE_UNITS, ITEM_TYPES } from "@/lib/billing";
 import { rulesFor, type DueRuleName } from "@/lib/due";
 import { deleteItemEvents, syncLater } from "@/lib/remind";
+import { isMortgage } from "@/lib/mortgage";
 
 export type ActionResult = { ok: true; id?: string; warning?: string } | { ok: false; error: string };
 
@@ -302,7 +303,17 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
   };
 
   // Combined bill: only bills of this user with the same group + vendor are accepted.
-  const self = await prisma.item.findUniqueOrThrow({ where: { id: t.itemId }, select: { categoryGroup: true, vendor: true } });
+  const self = await prisma.item.findUniqueOrThrow({ where: { id: t.itemId }, select: { categoryGroup: true, vendor: true, category: true } });
+  // Mortgage split: saved on this payment only, never copied to riders or combined bills.
+  const rate = str(fd, "ratePct").replace(/,/g, "");
+  const mortgage = isMortgage(self.category)
+    ? {
+        principalHkd: decimal(fd, "principalHkd"),
+        interestHkd: decimal(fd, "interestHkd"),
+        ratePct: /^\d+(\.\d{1,4})?$/.test(rate) ? new Prisma.Decimal(rate) : null,
+        balanceHkd: decimal(fd, "balanceHkd"),
+      }
+    : {};
   const picked = fd.getAll("combinedWith").filter((v): v is string => typeof v === "string" && v !== "");
   const picks = picked.length
     ? await prisma.item.findMany({
@@ -331,9 +342,9 @@ export async function savePayment(termId: string, paymentId: string | null, fd: 
   if (paymentId) {
     const p = await prisma.payment.findFirst({ where: { id: paymentId, termId } });
     if (!p) return fail("Payment not found.");
-    await prisma.payment.update({ where: { id: paymentId }, data });
+    await prisma.payment.update({ where: { id: paymentId }, data: { ...data, ...mortgage } });
   } else {
-    id = (await prisma.payment.create({ data: { ...data, termId } })).id;
+    id = (await prisma.payment.create({ data: { ...data, ...mortgage, termId } })).id;
   }
 
   const termStart = (await prisma.term.findUniqueOrThrow({ where: { id: termId }, select: { startDate: true } })).startDate;

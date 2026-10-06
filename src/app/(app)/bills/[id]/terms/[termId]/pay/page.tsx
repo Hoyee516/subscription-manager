@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { fmtDay, isoDay, todayHK } from "@/lib/dates";
-import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
+import { getCombineCandidates, getMethods, getMortgagePrev, getRiderRows } from "@/lib/lookups";
+import { isMortgage, splitInstalment } from "@/lib/mortgage";
 import { money, nextInstalment } from "@/lib/billing";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
@@ -13,15 +14,17 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const term = await db(userId).term.findFirst({
     where: { id: termId, itemId: id, item: { userId } },
     include: {
-      item: { select: { name: true, paymentMethodId: true, type: true } },
+      item: { select: { name: true, paymentMethodId: true, type: true, category: true } },
       payments: { select: { amountHkd: true, paidAt: true }, orderBy: { paidAt: "desc" } },
     },
   });
   if (!term) notFound();
-  const [methods, candidates, riders] = await Promise.all([
+  const mortgage = isMortgage(term.item.category);
+  const [methods, candidates, riders, prev] = await Promise.all([
     getMethods(userId),
     getCombineCandidates(userId, id),
     getRiderRows(userId, id, term.startDate, null),
+    mortgage ? getMortgagePrev(userId, id, null) : null,
   ]);
 
   // Prefill with what's left to pay on this term, in HKD where known.
@@ -35,6 +38,9 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
   const prefillDate = recurring
     ? nextInstalment(term, term.payments[0]?.paidAt ?? null)
     : todayHK();
+
+  // Mortgage: same rate as last time; interest, principal and balance worked out from it.
+  const split = prev && prev.rate && prefillAmount ? splitInstalment(prev.balance, Number(prev.rate), prefillAmount) : null;
 
   return (
     <>
@@ -61,6 +67,17 @@ export default async function LogPaymentPage({ params }: { params: Promise<{ id:
         candidates={candidates}
         itemName={term.item.name}
         riders={riders}
+        mortgage={
+          mortgage
+            ? {
+                prevBalance: prev?.balance ?? null,
+                rate: prev?.rate ?? "",
+                interest: split ? String(split.interest) : "",
+                principal: split ? String(split.principal) : "",
+                balance: split ? String(split.balance) : "",
+              }
+            : undefined
+        }
       />
     </>
   );

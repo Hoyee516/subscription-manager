@@ -178,6 +178,11 @@ model Payment {
   batchId         String? // payments settled together in one combined bill
   batch           PaymentBatch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
   note            String?
+  // Mortgage bills (category "Mortgage") only: how the instalment splits, and the loan after it.
+  principalHkd    Decimal?       @db.Decimal(12, 2)
+  interestHkd     Decimal?       @db.Decimal(12, 2)
+  ratePct         Decimal?       @db.Decimal(7, 4) // annual rate, e.g. 2.5000
+  balanceHkd      Decimal?       @db.Decimal(14, 2) // outstanding after this payment
   createdAt       DateTime       @default(now())
 
   @@index([batchId])

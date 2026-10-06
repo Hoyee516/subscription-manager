@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { deletePayment, savePayment } from "@/app/actions/items";
 import { CHANNELS, money } from "@/lib/billing";
+import { splitInstalment } from "@/lib/mortgage";
 import { useAction } from "./useAction";
 import { Card, Field, btnPrimary, inputCls } from "./ui";
 
@@ -14,6 +15,9 @@ export type PaymentDefaults = {
   combinedTotal: string;
   note: string;
 };
+
+/** Mortgage bills: the split of this instalment. prevBalance = balance after the previous payment, if known. */
+export type MortgageDefaults = { prevBalance: number | null; rate: string; interest: string; principal: string; balance: string };
 
 /** A rider of this bill, paid together with it: same date, card and channel. */
 export type RiderRow = { itemId: string; name: string; paymentId: string; amount: string };
@@ -32,6 +36,7 @@ export default function PaymentForm({
   candidates,
   itemName,
   riders = [],
+  mortgage,
 }: {
   itemId: string;
   termId: string;
@@ -41,10 +46,24 @@ export default function PaymentForm({
   candidates: { id: string; name: string }[]; // same group + vendor
   itemName: string;
   riders?: RiderRow[];
+  mortgage?: MortgageDefaults;
 }) {
   const { pending, run } = useAction();
   const [mainAmt, setMainAmt] = useState(d.amountHkd);
   const [riderAmts, setRiderAmts] = useState<Record<string, string>>(Object.fromEntries(riders.map((r) => [r.itemId, r.amount])));
+  const [mtg, setMtg] = useState(mortgage);
+  // Rate or amount changed: interest, principal and balance are worked out again from the previous balance.
+  const resplit = (rate: string, amount: string) => {
+    if (!mtg) return;
+    const r = num(rate);
+    const a = num(amount);
+    const next = { ...mtg, rate };
+    if (mtg.prevBalance !== null && r > 0 && a > 0) {
+      const x = splitInstalment(mtg.prevBalance, r, a);
+      Object.assign(next, { interest: String(x.interest), principal: String(x.principal), balance: String(x.balance) });
+    }
+    setMtg(next);
+  };
   const subtotal = num(mainAmt) + riders.reduce((sum, r) => sum + num(riderAmts[r.itemId] ?? ""), 0);
 
   const paidWith = (
@@ -91,7 +110,18 @@ export default function PaymentForm({
             <div className="grid grid-cols-2 gap-2.5">
               {paidOn}
               <Field label="Amount (HKD)" htmlFor="amountHkd">
-                <input id="amountHkd" name="amountHkd" inputMode="decimal" required defaultValue={d.amountHkd} className={inputCls} />
+                <input
+                  id="amountHkd"
+                  name="amountHkd"
+                  inputMode="decimal"
+                  required
+                  defaultValue={d.amountHkd}
+                  onChange={(e) => {
+                    setMainAmt(e.target.value);
+                    if (mtg) resplit(mtg.rate, e.target.value);
+                  }}
+                  className={inputCls}
+                />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
@@ -171,6 +201,38 @@ export default function PaymentForm({
               <input id="combinedTotal" name="combinedTotal" inputMode="decimal" defaultValue={d.combinedTotal} className={inputCls} />
             </Field>
           </>
+        )}
+        {mtg && (
+          <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field label="Rate (% a year)" htmlFor="ratePct">
+                <input id="ratePct" name="ratePct" inputMode="decimal" value={mtg.rate} onChange={(e) => resplit(e.target.value, mainAmt)} className={inputCls} />
+              </Field>
+              {(
+                [
+                  ["interestHkd", "interest", "Interest (HKD)"],
+                  ["principalHkd", "principal", "Principal (HKD)"],
+                  ["balanceHkd", "balance", "Balance after (HKD)"],
+                ] as const
+              ).map(([name, key, label]) => (
+                <Field key={name} label={label} htmlFor={name}>
+                  <input
+                    id={name}
+                    name={name}
+                    inputMode="decimal"
+                    value={mtg[key]}
+                    onChange={(e) => setMtg({ ...mtg, [key]: e.target.value })}
+                    className={inputCls}
+                  />
+                </Field>
+              ))}
+            </div>
+            <p className="text-xs text-muted">
+              {mtg.prevBalance !== null
+                ? `Interest = previous balance ${money(mtg.prevBalance)} × rate ÷ 12. Change the rate when the bank does; you can overwrite any figure.`
+                : "No earlier balance recorded, so enter the figures from the bank statement."}
+            </p>
+          </div>
         )}
         <Field label="Note" htmlFor="note">
           <input id="note" name="note" defaultValue={d.note} className={inputCls} />

@@ -37,6 +37,19 @@ export async function getCombineCandidates(userId: string, itemId: string) {
 }
 
 /**
+ * Mortgage bills: the latest earlier payment with a balance recorded, which the next
+ * payment's interest is worked out from. `before` = the date of the payment being edited.
+ */
+export async function getMortgagePrev(userId: string, itemId: string, before: Date | null) {
+  const p = await db(userId).payment.findFirst({
+    where: { term: { itemId, item: { userId } }, balanceHkd: { not: null }, ...(before ? { paidAt: { lt: before } } : {}) },
+    orderBy: { paidAt: "desc" },
+    select: { balanceHkd: true, ratePct: true },
+  });
+  return p ? { balance: Number(p.balanceHkd), rate: p.ratePct ? p.ratePct.toString() : "" } : null;
+}
+
+/**
  * Rider rows for the payment form. Editing (paidAt given): each rider's payment
  * on that date. Logging new: prefilled with what's left to pay on the rider's
  * term for the same policy year (or its latest term).

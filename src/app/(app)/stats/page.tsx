@@ -132,7 +132,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
             <Question
               label={s.mortgage.name}
               q="How much of my instalments is interest?"
-              why="Yearly totals from the Principal / Interest figures in each payment's note."
+              why="Yearly totals from the Principal / Interest fields on each payment."
             >
               {s.mortgage.balance && (
                 <p className="text-xs text-muted">
@@ -149,7 +149,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
             </Question>
           ) : (
             <Card>
-              <p className="text-sm text-muted">No mortgage payments with a principal / interest note yet.</p>
+              <p className="text-sm text-muted">No mortgage payments with principal / interest filled in yet.</p>
             </Card>
           ))}
       </div>

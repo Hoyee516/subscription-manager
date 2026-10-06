@@ -13,6 +13,7 @@ import ItemStatusActions from "@/components/ItemStatusActions";
 import { loadData, occurrences } from "@/lib/schedule";
 import { itemTarget } from "@/lib/remind";
 import { calendarConfigured } from "@/lib/gcal";
+import { isMortgage } from "@/lib/mortgage";
 
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
@@ -258,6 +259,18 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                             {" "}
                             <Pill tone="pink">Combined bill</Pill>
                           </>
+                        )}
+                        {isMortgage(item.category) && (p.principalHkd || p.interestHkd || p.ratePct || p.balanceHkd) && (
+                          <span className="block text-xs text-muted">
+                            {[
+                              p.principalHkd && `Principal ${money(Number(p.principalHkd))}`,
+                              p.interestHkd && `Interest ${money(Number(p.interestHkd))}`,
+                              p.ratePct && `Rate ${Number(p.ratePct)}%`,
+                              p.balanceHkd && `Balance ${money(Number(p.balanceHkd))}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
                         )}
                       </li>
                     ))}

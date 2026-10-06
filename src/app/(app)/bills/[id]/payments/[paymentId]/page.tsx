@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/cache";
 import { requireUserId } from "@/lib/session";
 import { isoDay } from "@/lib/dates";
-import { getCombineCandidates, getMethods, getRiderRows } from "@/lib/lookups";
+import { getCombineCandidates, getMethods, getMortgagePrev, getRiderRows } from "@/lib/lookups";
+import { isMortgage } from "@/lib/mortgage";
 import PaymentForm from "@/components/PaymentForm";
 import { BackBar } from "@/components/ui";
 
@@ -12,7 +13,7 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
   const p = await db(userId).payment.findFirst({
     where: { id: paymentId, term: { itemId: id, item: { userId } } },
     include: {
-      term: { select: { startDate: true, item: { select: { name: true, parentId: true } } } },
+      term: { select: { startDate: true, item: { select: { name: true, parentId: true, category: true } } } },
       batch: { include: { payments: { where: { id: { not: paymentId } }, select: { term: { select: { itemId: true } } } } } },
     },
   });
@@ -25,11 +26,14 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
     if (main) redirect(`/bills/${parentId}/payments/${main.id}`);
   }
 
-  const [methods, candidates, riders] = await Promise.all([
+  const mortgage = isMortgage(p.term.item.category);
+  const [methods, candidates, riders, prev] = await Promise.all([
     getMethods(userId),
     getCombineCandidates(userId, id),
     getRiderRows(userId, id, p.term.startDate, p.paidAt),
+    mortgage ? getMortgagePrev(userId, id, p.paidAt) : null,
   ]);
+  const s = (v: { toString(): string } | null) => (v ? v.toString() : "");
 
   return (
     <>
@@ -56,6 +60,17 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
         candidates={candidates}
         itemName={p.term.item.name}
         riders={riders}
+        mortgage={
+          mortgage
+            ? {
+                prevBalance: prev?.balance ?? null,
+                rate: s(p.ratePct),
+                interest: s(p.interestHkd),
+                principal: s(p.principalHkd),
+                balance: s(p.balanceHkd),
+              }
+            : undefined
+        }
       />
     </>
   );
