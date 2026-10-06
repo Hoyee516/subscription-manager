@@ -236,12 +236,16 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
                 {t.payments.length > 0 && (
                   <ul className="mt-2 flex flex-col gap-1 rounded-lg bg-[#F6F6F3] px-2.5 py-2">
-                    {t.payments.map((p) => (
+                    {/* Latest payment first */}
+                    {[...t.payments].reverse().map((p) => (
                       <li key={p.id}>
                         <Link href={`/bills/${item.id}/payments/${p.id}`} className="text-xs font-bold text-ink">
                           💳 Paid {fmtDay(p.paidAt)}
                         </Link>
                         {p.paymentMethod && <span className="text-xs text-muted"> ({p.paymentMethod.label})</span>}
+                        {isMortgage(item.category) && p.balanceHkd && (
+                          <span className="text-xs text-muted"> · Balance {money(Number(p.balanceHkd))}</span>
+                        )}
                         {p.channel === "IN_PERSON" && (
                           <>
                             {" "}
@@ -259,18 +263,6 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                             {" "}
                             <Pill tone="pink">Combined bill</Pill>
                           </>
-                        )}
-                        {isMortgage(item.category) && (p.principalHkd || p.interestHkd || p.ratePct || p.balanceHkd) && (
-                          <span className="block text-xs text-muted">
-                            {[
-                              p.principalHkd && `Principal ${money(Number(p.principalHkd))}`,
-                              p.interestHkd && `Interest ${money(Number(p.interestHkd))}`,
-                              p.ratePct && `Rate ${Number(p.ratePct)}%`,
-                              p.balanceHkd && `Balance ${money(Number(p.balanceHkd))}`,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </span>
                         )}
                       </li>
                     ))}
