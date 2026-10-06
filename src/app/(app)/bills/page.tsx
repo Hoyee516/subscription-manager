@@ -111,15 +111,63 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
         ...lastPaymentBadges(i.terms.flatMap((t) => t.payments)),
         next: nd ? `${nd.label} ${fmtDay(nd.date)}` : i.status === "CANCELLED" ? "Cancelled" : i.status === "ENDED" ? "Ended" : "",
         urgency: nothingAhead ? null : urgency(nd?.date, today),
+        nextTs: nd?.date ? nd.date.getTime() : Infinity,
         riders: i.riders.map((r) => ({ id: r.id, name: r.name, ...amounts(r.terms[0]) })),
       };
     });
 
-  const groups = Map.groupBy(rows, (r) => r.groupKey);
+  // "All" tab: anything renewing within 3 months moves into an Upcoming group on top,
+  // red (under 1 month) before orange (1–3 months), soonest first within each.
+  const isUpcoming = (r: (typeof rows)[number]) => filter === "all" && (r.urgency === "red" || r.urgency === "orange");
+  const upcoming = rows
+    .filter(isUpcoming)
+    .sort((a, b) => (a.urgency === b.urgency ? 0 : a.urgency === "red" ? -1 : 1) || a.nextTs - b.nextTs);
+
+  const groups = Map.groupBy(rows.filter((r) => !isUpcoming(r)), (r) => r.groupKey);
   // Fixed order; any other group (e.g. Creator Tools) follows alphabetically.
   const ORDER = ["Home", "Tax", "Insurance", "Insurance · savings-type", "Telecom", "Memberships", "Software"];
   const rank = (k: string) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
   const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+
+  const renderRow = (r: (typeof rows)[number]) => (
+    <li key={r.id}>
+      <Link
+        href={`/bills/${r.id}`}
+        className={`flex gap-3 rounded-2xl bg-white px-4 py-3 ${r.urgency ? `border-2 ${URGENCY_BORDER[r.urgency]}` : "border border-line"}`}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold">{r.name}</p>
+          <p className="mt-0.5 text-xs text-muted">
+            {r.vendor}
+            {r.next && ` · ${r.next}`}
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <Pill>{r.isSavings ? "Savings" : TYPE_LABEL[r.type]}</Pill>
+            {r.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
+            {r.autoCharge && <Pill tone="teal">Auto-charged</Pill>}
+            {r.status === "ACTIVE" && (r.card ? <Pill>{r.card}</Pill> : <Pill tone="orange">No card set</Pill>)}
+            {r.inPerson && <Pill tone="yellow">In person</Pill>}
+            {r.billPayment && <Pill tone="blue">Bill payment</Pill>}
+            {r.combined && <Pill tone="pink">Combined bill</Pill>}
+          </div>
+          {r.riders.map((rd) => (
+            <p key={rd.id} className="mt-2 flex justify-between gap-2 rounded-lg bg-[#F6F6F3] px-2.5 py-1.5 text-xs text-muted">
+              <span>↳ {rd.name}</span>
+              <span className="text-right">
+                <span className="font-bold text-ink">{rd.main}</span>
+                {rd.original && <span className="block">{rd.original}</span>}
+              </span>
+            </p>
+          ))}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-bold">{r.main}</p>
+          {r.original && <p className="text-xs text-muted">{r.original}</p>}
+          <p className="text-xs text-muted">{r.cycle}</p>
+        </div>
+      </Link>
+    </li>
+  );
 
   return (
     <>
@@ -155,6 +203,14 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
       {rows.length === 0 && <p className="px-1 text-sm text-muted">Nothing here.</p>}
 
       <div className="flex flex-col gap-5">
+        {upcoming.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <div className="px-1">
+              <span className="whitespace-nowrap rounded-full bg-[#FBE3E3] px-2 py-0.5 text-[11px] font-bold text-[#9B2C2C]">Upcoming</span>
+            </div>
+            <ul className="flex flex-col gap-2">{upcoming.map(renderRow)}</ul>
+          </section>
+        )}
         {order.map((key) => {
           const list = groups.get(key)!;
           const first = list[0];
@@ -164,45 +220,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Promis
                 <Pill tone={groupTone(first.group, first.isSavings)}>{first.isSavings ? `${first.group} · savings-type` : first.group}</Pill>
               </div>
               <ul className="flex flex-col gap-2">
-                {list.map((r) => (
-                  <li key={r.id}>
-                    <Link
-                      href={`/bills/${r.id}`}
-                      className={`flex gap-3 rounded-2xl bg-white px-4 py-3 ${r.urgency ? `border-2 ${URGENCY_BORDER[r.urgency]}` : "border border-line"}`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold">{r.name}</p>
-                        <p className="mt-0.5 text-xs text-muted">
-                          {r.vendor}
-                          {r.next && ` · ${r.next}`}
-                        </p>
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          <Pill>{r.isSavings ? "Savings" : TYPE_LABEL[r.type]}</Pill>
-                          {r.autoRenew && <Pill tone="teal">Auto-renew</Pill>}
-                          {r.autoCharge && <Pill tone="teal">Auto-charged</Pill>}
-                          {r.status === "ACTIVE" && (r.card ? <Pill>{r.card}</Pill> : <Pill tone="orange">No card set</Pill>)}
-                          {r.inPerson && <Pill tone="yellow">In person</Pill>}
-                          {r.billPayment && <Pill tone="blue">Bill payment</Pill>}
-                          {r.combined && <Pill tone="pink">Combined bill</Pill>}
-                        </div>
-                        {r.riders.map((rd) => (
-                          <p key={rd.id} className="mt-2 flex justify-between gap-2 rounded-lg bg-[#F6F6F3] px-2.5 py-1.5 text-xs text-muted">
-                            <span>↳ {rd.name}</span>
-                            <span className="text-right">
-                              <span className="font-bold text-ink">{rd.main}</span>
-                              {rd.original && <span className="block">{rd.original}</span>}
-                            </span>
-                          </p>
-                        ))}
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm font-bold">{r.main}</p>
-                        {r.original && <p className="text-xs text-muted">{r.original}</p>}
-                        <p className="text-xs text-muted">{r.cycle}</p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {list.map(renderRow)}
               </ul>
             </section>
           );
