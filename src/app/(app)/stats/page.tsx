@@ -120,7 +120,7 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
           <Question
             label="Tax"
             q="How much salaries tax each year?"
-            why="Total bill per year of assessment (1 Apr – 31 Mar), all instalments together. A lighter bar isn't fully paid yet."
+            why="Total bill per year of assessment (1 Apr – 31 Mar), both instalments together, including next year's provisional tax. A lighter bar isn't fully paid yet."
           >
             {s.tax.length ? <YearBars rows={s.tax} color={CATEGORY.tax.color} /> : <p className="text-sm text-muted">No tax bills yet.</p>}
           </Question>
