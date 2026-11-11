@@ -69,7 +69,8 @@ export function stepCycle(d: Date, unit: CycleUnitName, count: number): Date {
 
 type TermDates = DueTerm & {
   cycleUnit: CycleUnitName;
-  instalments?: { dueDate: Date }[];
+  instalments?: { dueDate: Date; amountHkd: { toString(): string } }[];
+  payments?: { paidAt: Date; amountHkd: { toString(): string } }[];
 };
 
 export type NextDate = { date: Date; label: string; past: boolean } | null;
@@ -78,10 +79,22 @@ export type NextDate = { date: Date; label: string; past: boolean } | null;
 export function nextDate(type: ItemTypeName, active: boolean, terms: TermDates[], today: Date): NextDate {
   const t = terms[terms.length - 1];
   if (!t || !active) return null;
-  // Terms paid in instalments: the next instalment, and nothing once they're all past.
+  const paid = t.payments ?? [];
+  // Terms paid in instalments: the first instalment the term's payments don't cover
+  // (soonest first, whatever the payment dates); nothing once all are covered.
   if (t.instalments?.length) {
-    const next = t.instalments.map((x) => x.dueDate).filter((d) => d >= today).sort((a, b) => a.getTime() - b.getTime())[0];
-    return next ? { date: next, label: "Instalment due", past: false } : null;
+    let left = paid.reduce((s, p) => s + Number(p.amountHkd), 0);
+    const open = [...t.instalments]
+      .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+      .find((x) => {
+        const due = Number(x.amountHkd);
+        const settled = left >= due - 1;
+        left -= due;
+        return !settled;
+      });
+    if (!open) return null;
+    const past = open.dueDate < today;
+    return { date: open.dueDate, label: past ? "Instalment overdue" : "Instalment due", past };
   }
   const mk = (date: Date, label: string, pastLabel = label): NextDate => {
     const past = date < today;
@@ -90,14 +103,19 @@ export function nextDate(type: ItemTypeName, active: boolean, terms: TermDates[]
   switch (type) {
     case "RECURRING": {
       if (t.cycleUnit === "ONCE" || t.cycleCount < 1) return null;
-      const d = nextCycleCharge(t, today);
+      // Paid ahead: the charge after the one the latest payment settled.
+      const last = paid.reduce<Date | null>((a, p) => (!a || p.paidAt > a ? p.paidAt : a), null);
+      const after = last ? chargeAfterPayment(t, last) : null;
+      const due = nextCycleCharge(t, today);
+      const d = due && after && after > due && (!t.endDate || after <= t.endDate) ? after : due;
       return d ? mk(d, "Renews") : null;
     }
     case "POLICY": {
       // This term's premium if it's still ahead; otherwise the next policy year's,
       // which can fall before that year starts (Bupa: due 23 Jul for a 1 Aug start).
       const due = termChargeDate(t);
-      if (due >= today || t.startDate > today) return mk(due, "Due");
+      // Paid already: skip to the next policy year.
+      if (!paid.length && (due >= today || t.startDate > today)) return mk(due, "Due");
       if (!t.endDate) return null;
       const nextStart = addDays(t.endDate, 1);
       const nextDue = termChargeDate({ ...t, startDate: nextStart, dueDate: null });

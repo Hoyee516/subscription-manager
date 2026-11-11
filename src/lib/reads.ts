@@ -13,8 +13,8 @@ export function billsList(userId: string) {
       terms: {
         orderBy: { startDate: "asc" },
         include: {
-          payments: { orderBy: { paidAt: "desc" }, take: 1, select: { paidAt: true, channel: true, batchId: true } },
-          instalments: { select: { dueDate: true } },
+          payments: { orderBy: { paidAt: "desc" }, select: { paidAt: true, channel: true, batchId: true, amountHkd: true } },
+          instalments: { select: { dueDate: true, amountHkd: true } },
         },
       },
       riders: { include: { terms: { orderBy: { startDate: "desc" }, take: 1 } } },

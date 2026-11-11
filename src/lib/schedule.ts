@@ -172,9 +172,10 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
       used.add(idx);
       return true;
     };
-    const push = (date: Date, amount: number | null, estimate: boolean, kind: Occurrence["kind"], note?: string, early = 45) => {
+    // `settled`: already known paid from the term's own payments (skips the date matching).
+    const push = (date: Date, amount: number | null, estimate: boolean, kind: Occurrence["kind"], note?: string, early = 45, settled?: boolean) => {
       if (date < from || date > to) return;
-      const logged = kind === "charge" && paidNear(date, early);
+      const logged = kind === "charge" && (settled ?? paidNear(date, early));
       out.push({
         key: `${i.id}-${date.toISOString()}-${kind}`,
         date,
@@ -208,14 +209,20 @@ export function occurrences(data: Data, from: Date, to: Date, today: Date): Occu
 
       // Paid in instalments (e.g. salaries tax): one charge per instalment, no renewal estimate.
       if (t.instalments.length) {
-        t.instalments.forEach((x, n) =>
-          push(x.dueDate, Number(x.amountHkd), false, "charge", `Instalment ${n + 1} of ${t.instalments.length} · ${card}`)
-        );
+        // The term's payments, whatever their dates, settle instalments soonest first.
+        let left = t.payments.reduce((s, p) => s + Number(p.amountHkd), 0);
+        t.instalments.forEach((x, n) => {
+          const due = Number(x.amountHkd);
+          const settled = left >= due - 1;
+          left -= due;
+          push(x.dueDate, due, false, "charge", `Instalment ${n + 1} of ${t.instalments.length} · ${card}`, 45, settled);
+        });
         return;
       }
 
       // POLICY / PREPAID / PASS / TRIAL / one-off terms: one charge per term.
-      if (hkd) push(termChargeDate(t), hkd, false, "charge");
+      // A payment logged on the term settles it, however early (policies are often paid well ahead).
+      if (hkd) push(termChargeDate(t), hkd, false, "charge", undefined, 45, t.payments.length > 0 || undefined);
       if (!isLast) return;
       if (type === "TRIAL" && t.endDate) push(t.endDate, null, false, "ends", "Trial ends — cancel or it converts");
       else if (type === "PASS" && t.endDate) push(t.endDate, null, false, "ends", "Pass ends");

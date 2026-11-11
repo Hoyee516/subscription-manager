@@ -24,7 +24,7 @@ export default async function HomePage() {
 
   const soon = occurrences(data, today, addDays(today, 30), today).filter((o) => o.kind === "charge" && !o.paid);
   const big = occurrences(data, addDays(today, 31), addDays(today, 120), today)
-    .filter((o) => o.kind === "charge" && (o.amount ?? 0) >= 5000)
+    .filter((o) => o.kind === "charge" && !o.paid && (o.amount ?? 0) >= 5000)
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))[0];
 
   // Savings-type premiums (儲蓄, 年金): their own bar, one segment per policy, biggest first.
